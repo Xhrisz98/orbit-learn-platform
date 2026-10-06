@@ -1,97 +1,51 @@
-export type Role = 'parent' | 'student' | 'teacher' | 'tutor';
+export type Role = 'recruiter' | 'candidate';
 
-export interface Student {
+export interface Question {
   id: string;
-  name: string;
-  grade: string;
-  school: string;
-  avatar: string;
-  lmsConnected: ('Google Classroom' | 'Canvas' | 'Schoology')[];
-  gpa?: string;
+  text: string;
+  options: {
+    id: string;
+    text: string;
+  }[];
+  correctOptionIds: string[]; // Supports single or multiple correct answers
+  explanation?: string;
 }
 
-export interface Assignment {
+export interface Quiz {
   id: string;
-  studentId: string;
-  studentName: string;
   title: string;
-  subject: string;
-  dueDate: string;
-  dueTime?: string;
-  sourceLms: 'Google Classroom' | 'Canvas' | 'Schoology' | 'Direct Upload';
-  status: 'missing' | 'due-soon' | 'submitted' | 'graded';
-  grade?: string;
-  instructions?: string;
-  submittedFile?: string;
-  teacherName?: string;
-}
-
-export interface Tutor {
-  id: string;
-  name: string;
-  title: string;
-  avatar: string;
-  rating: number;
-  reviewsCount: number;
-  hourlyRate: number;
-  subjects: string[];
-  education: string;
-  isVerified: boolean;
-  backgroundChecked: boolean;
-  nextAvailable: string;
-  bio: string;
-  location: string;
-  availableSlots: string[];
-}
-
-export interface Booking {
-  id: string;
-  tutorId: string;
-  tutorName: string;
-  studentId: string;
-  studentName: string;
-  subject: string;
-  date: string;
-  timeSlot: string;
-  hourlyRate: number;
-  status: 'confirmed' | 'completed' | 'cancelled';
+  category: string;
+  description: string;
+  timeLimitMinutes?: number;
+  questions: Question[];
   createdAt: string;
 }
 
-export interface PermissionSlip {
+export interface Candidate {
   id: string;
-  studentId: string;
-  studentName: string;
-  title: string;
-  description: string;
-  issuer: string;
-  school: string;
-  deadline: string;
-  status: 'pending' | 'signed';
-  signedBy?: string;
-  signedAt?: string;
-  signatureData?: string;
-  ferpaAuditId?: string;
+  name: string;
+  email: string;
+  roleApplied: string;
+  avatar: string;
+  registeredAt: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  senderName: string;
-  senderRole: string;
-  avatar: string;
-  content: string;
-  timestamp: string;
-  isCurrentUser: boolean;
-}
+export type AssessmentStatus = 'pending' | 'in_progress' | 'completed';
 
-export interface ChatThread {
+export interface AssessmentAssignment {
   id: string;
-  recipientName: string;
-  recipientRole: string;
-  studentTag?: string;
-  avatar: string;
-  unreadCount: number;
-  lastMessage: string;
-  lastTimestamp: string;
-  messages: ChatMessage[];
+  candidateId: string;
+  candidateName: string;
+  candidateEmail: string;
+  roleApplied: string;
+  quizId: string;
+  quizTitle: string;
+  status: AssessmentStatus;
+  score?: number; // 0 to 100
+  totalQuestions: number;
+  correctAnswersCount?: number;
+  answers?: Record<string, string[]>; // questionId -> selectedOptionIds
+  assignedAt: string;
+  completedAt?: string;
+  passedThreshold?: boolean; // e.g. score >= 75
 }

@@ -2,33 +2,37 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { ShieldCheck } from 'lucide-react';
 
+
 export const Footer: React.FC = () => {
-  const { setCurrentView, t } = useApp();
+  const { t, setActiveRole } = useApp();
 
   return (
-    <footer className="mt-16 pt-8 border-t border-[#E8E4DF] text-xs text-[#52697C]">
+    <footer className="mt-16 pt-8 border-t border-slate-200 text-xs text-slate-500">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[#0D8B8B]">{t.appName}</span>
+            <span className="font-extrabold text-slate-900">{t.brand}</span>
             <span>• {t.tagline}</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
             <button
-              onClick={() => setCurrentView('landing')}
-              className="hover:text-[#1A2332] cursor-pointer"
+              onClick={() => setActiveRole('recruiter')}
+              className="hover:text-slate-900 cursor-pointer"
             >
-              {t.nav.landing}
+              {t.nav.overview}
             </button>
             <button
-              onClick={() => setCurrentView('compliance')}
-              className="hover:text-[#1A2332] cursor-pointer flex items-center gap-1"
+              onClick={() => setActiveRole('candidate')}
+              className="hover:text-slate-900 cursor-pointer"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#0D8B8B]" />
-              <span>FERPA & COPPA</span>
+              {t.nav.candidatePortal}
             </button>
-            <span>&copy; 2026 OrbitLearn. All rights reserved.</span>
+            <span className="flex items-center gap-1 text-slate-400">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Standardized Scoring Engine</span>
+            </span>
+            <span>&copy; 2026 TalentScreen. All rights reserved.</span>
           </div>
         </div>
       </div>

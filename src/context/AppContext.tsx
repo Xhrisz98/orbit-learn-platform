@@ -1,16 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Role, Student, Assignment, Tutor, Booking, PermissionSlip, ChatThread } from '../types';
-import {
-  initialStudents,
-  initialAssignments,
-  initialTutors,
-  initialBookings,
-  initialPermissionSlips,
-  initialThreads,
-} from '../data/mockData';
+import type { Role, Quiz, Candidate, AssessmentAssignment } from '../types';
+import { initialQuizzes, initialCandidates, initialAssignments } from '../data/mockData';
 import { translations } from '../i18n/translations';
 import type { Language } from '../i18n/translations';
 
+interface SubmitResult {
+  score: number;
+  correctCount: number;
+  totalQuestions: number;
+  passed: boolean;
+}
 
 interface AppContextType {
   language: Language;
@@ -18,185 +17,176 @@ interface AppContextType {
   t: typeof translations['en'];
   activeRole: Role;
   setActiveRole: (role: Role) => void;
-  currentView: 'dashboard' | 'marketplace' | 'compliance' | 'messages' | 'landing';
-  setCurrentView: (view: 'dashboard' | 'marketplace' | 'compliance' | 'messages' | 'landing') => void;
-  activeStudentId: string;
-  setActiveStudentId: (id: string) => void;
-  students: Student[];
-  assignments: Assignment[];
-  tutors: Tutor[];
-  bookings: Booking[];
-  permissionSlips: PermissionSlip[];
-  threads: ChatThread[];
-  isSyncing: boolean;
-  lastSyncedText: string;
-  syncWithLMS: () => void;
-  createBooking: (tutorId: string, studentId: string, date: string, timeSlot: string) => void;
-  signPermissionSlip: (slipId: string, signerName: string, signatureCanvasData?: string) => void;
-  submitAssignment: (assignmentId: string, fileName: string) => void;
-  addAssignment: (newAssignment: Omit<Assignment, 'id'>) => void;
-  sendMessage: (threadId: string, content: string) => void;
+  activeCandidateId: string;
+  setActiveCandidateId: (id: string) => void;
+  quizzes: Quiz[];
+  candidates: Candidate[];
+  assignments: AssessmentAssignment[];
+  createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => void;
+  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => void;
+  assignQuiz: (candidateId: string, quizId: string) => void;
+  submitAssessment: (assignmentId: string, userAnswers: Record<string, string[]>) => SubmitResult;
+  deleteQuiz: (quizId: string) => void;
+  deleteCandidate: (candidateId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('orbit_lang') as Language;
+    const saved = localStorage.getItem('talent_lang') as Language;
     return saved === 'es' || saved === 'en' ? saved : 'en'; // English is default
   });
 
-  const [activeRole, setActiveRole] = useState<Role>('parent');
-  const [currentView, setCurrentView] = useState<'dashboard' | 'marketplace' | 'compliance' | 'messages' | 'landing'>('dashboard');
-  const [activeStudentId, setActiveStudentId] = useState<string>('all');
-  
-  const [students] = useState<Student[]>(initialStudents);
-  const [assignments, setAssignments] = useState<Assignment[]>(() => {
-    const saved = localStorage.getItem('orbit_assignments');
+  const [activeRole, setActiveRole] = useState<Role>('recruiter');
+  const [activeCandidateId, setActiveCandidateId] = useState<string>('cand-4'); // Lucas Vance (has pending test)
+
+  const [quizzes, setQuizzes] = useState<Quiz[]>(() => {
+    const saved = localStorage.getItem('talent_quizzes');
+    return saved ? JSON.parse(saved) : initialQuizzes;
+  });
+
+  const [candidates, setCandidates] = useState<Candidate[]>(() => {
+    const saved = localStorage.getItem('talent_candidates');
+    return saved ? JSON.parse(saved) : initialCandidates;
+  });
+
+  const [assignments, setAssignments] = useState<AssessmentAssignment[]>(() => {
+    const saved = localStorage.getItem('talent_assignments');
     return saved ? JSON.parse(saved) : initialAssignments;
-  });
-  const [tutors] = useState<Tutor[]>(initialTutors);
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    const saved = localStorage.getItem('orbit_bookings');
-    return saved ? JSON.parse(saved) : initialBookings;
-  });
-  const [permissionSlips, setPermissionSlips] = useState<PermissionSlip[]>(() => {
-    const saved = localStorage.getItem('orbit_slips');
-    return saved ? JSON.parse(saved) : initialPermissionSlips;
-  });
-  const [threads, setThreads] = useState<ChatThread[]>(() => {
-    const saved = localStorage.getItem('orbit_threads');
-    return saved ? JSON.parse(saved) : initialThreads;
   });
 
   const t = translations[language];
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('orbit_lang', lang);
+    localStorage.setItem('talent_lang', lang);
   };
 
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [lastSyncedText, setLastSyncedText] = useState<string>(() =>
-    language === 'en' ? 'Synced today at 10:30 AM' : 'Sincronizado hoy a las 10:30 AM'
-  );
+  useEffect(() => {
+    localStorage.setItem('talent_quizzes', JSON.stringify(quizzes));
+  }, [quizzes]);
 
   useEffect(() => {
-    localStorage.setItem('orbit_assignments', JSON.stringify(assignments));
+    localStorage.setItem('talent_candidates', JSON.stringify(candidates));
+  }, [candidates]);
+
+  useEffect(() => {
+    localStorage.setItem('talent_assignments', JSON.stringify(assignments));
   }, [assignments]);
 
-  useEffect(() => {
-    localStorage.setItem('orbit_bookings', JSON.stringify(bookings));
-  }, [bookings]);
-
-  useEffect(() => {
-    localStorage.setItem('orbit_slips', JSON.stringify(permissionSlips));
-  }, [permissionSlips]);
-
-  useEffect(() => {
-    localStorage.setItem('orbit_threads', JSON.stringify(threads));
-  }, [threads]);
-
-  const syncWithLMS = () => {
-    setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setLastSyncedText(
-        language === 'en'
-          ? `Synced just now (${time}) with Google Classroom & Canvas`
-          : `Sincronizado recién (${time}) con Google Classroom y Canvas`
-      );
-    }, 1100);
-  };
-
-  const createBooking = (tutorId: string, studentId: string, date: string, timeSlot: string) => {
-    const tutor = tutors.find(t => t.id === tutorId);
-    const student = students.find(s => s.id === studentId);
-    if (!tutor || !student) return;
-
-    const newBooking: Booking = {
-      id: `b-${Date.now()}`,
-      tutorId,
-      tutorName: tutor.name,
-      studentId,
-      studentName: student.name,
-      subject: tutor.subjects[0] || (language === 'en' ? 'General Tutoring' : 'Tutoría General'),
-      date,
-      timeSlot,
-      hourlyRate: tutor.hourlyRate,
-      status: 'confirmed',
+  const createQuiz = (newQuizData: Omit<Quiz, 'id' | 'createdAt'>) => {
+    const created: Quiz = {
+      ...newQuizData,
+      id: `quiz-${Date.now()}`,
       createdAt: new Date().toISOString().split('T')[0],
     };
-
-    setBookings(prev => [newBooking, ...prev]);
+    setQuizzes(prev => [created, ...prev]);
   };
 
-  const signPermissionSlip = (slipId: string, signerName: string, signatureCanvasData?: string) => {
-    setPermissionSlips(prev =>
-      prev.map(slip => {
-        if (slip.id === slipId) {
-          return {
-            ...slip,
-            status: 'signed',
-            signedBy: signerName || (language === 'en' ? 'Mark Miller (Parent)' : 'Mark Miller (Padre)'),
-            signedAt: new Date().toLocaleString(),
-            signatureData: signatureCanvasData,
-            ferpaAuditId: `FERPA-AUDIT-${Math.floor(1000 + Math.random() * 9000)}-WVH`,
-          };
-        }
-        return slip;
-      })
-    );
+  const createCandidate = (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => {
+    const avatars = [
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
+    ];
+    const created: Candidate = {
+      ...newCandData,
+      id: `cand-${Date.now()}`,
+      avatar: avatars[Math.floor(Math.random() * avatars.length)],
+      registeredAt: new Date().toISOString().split('T')[0],
+    };
+    setCandidates(prev => [created, ...prev]);
   };
 
-  const submitAssignment = (assignmentId: string, fileName: string) => {
+  const assignQuiz = (candidateId: string, quizId: string) => {
+    const candidate = candidates.find(c => c.id === candidateId);
+    const quiz = quizzes.find(q => q.id === quizId);
+    if (!candidate || !quiz) return;
+
+    const newAssignment: AssessmentAssignment = {
+      id: `assign-${Date.now()}`,
+      candidateId: candidate.id,
+      candidateName: candidate.name,
+      candidateEmail: candidate.email,
+      roleApplied: candidate.roleApplied,
+      quizId: quiz.id,
+      quizTitle: quiz.title,
+      status: 'pending',
+      totalQuestions: quiz.questions.length,
+      assignedAt: new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setAssignments(prev => [newAssignment, ...prev]);
+  };
+
+  const submitAssessment = (assignmentId: string, userAnswers: Record<string, string[]>): SubmitResult => {
+    const assignment = assignments.find(a => a.id === assignmentId);
+    if (!assignment) {
+      return { score: 0, correctCount: 0, totalQuestions: 0, passed: false };
+    }
+
+    const quiz = quizzes.find(q => q.id === assignment.quizId);
+    if (!quiz) {
+      return { score: 0, correctCount: 0, totalQuestions: 0, passed: false };
+    }
+
+    let correctCount = 0;
+
+    // Check each question in the quiz
+    quiz.questions.forEach(q => {
+      const selected = (userAnswers[q.id] || []).slice().sort();
+      const expected = q.correctOptionIds.slice().sort();
+
+      const isMatch =
+        selected.length === expected.length &&
+        selected.every((val, index) => val === expected[index]);
+
+      if (isMatch) {
+        correctCount += 1;
+      }
+    });
+
+    const totalQuestions = quiz.questions.length;
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+    const passed = score >= 75;
+
+    const completedAt = new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
     setAssignments(prev =>
       prev.map(a => {
         if (a.id === assignmentId) {
           return {
             ...a,
-            status: 'submitted',
-            submittedFile: fileName,
+            status: 'completed',
+            score,
+            totalQuestions,
+            correctAnswersCount: correctCount,
+            passedThreshold: passed,
+            answers: userAnswers,
+            completedAt,
           };
         }
         return a;
       })
     );
-  };
 
-  const addAssignment = (newAssignment: Omit<Assignment, 'id'>) => {
-    const created: Assignment = {
-      ...newAssignment,
-      id: `a-${Date.now()}`,
+    return {
+      score,
+      correctCount,
+      totalQuestions,
+      passed,
     };
-    setAssignments(prev => [created, ...prev]);
   };
 
-  const sendMessage = (threadId: string, content: string) => {
-    if (!content.trim()) return;
-    setThreads(prev =>
-      prev.map(thread => {
-        if (thread.id === threadId) {
-          const newMsg = {
-            id: `msg-${Date.now()}`,
-            senderName: activeRole === 'parent' ? 'Mark Miller' : (language === 'en' ? 'User' : 'Usuario'),
-            senderRole: activeRole === 'parent' ? t.roles.parent : t.roles[activeRole],
-            avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-            content,
-            timestamp: language === 'en' ? 'Just now' : 'Ahora',
-            isCurrentUser: true,
-          };
-          return {
-            ...thread,
-            lastMessage: content,
-            lastTimestamp: language === 'en' ? 'Just now' : 'Ahora',
-            messages: [...thread.messages, newMsg],
-          };
-        }
-        return thread;
-      })
-    );
+  const deleteQuiz = (quizId: string) => {
+    setQuizzes(prev => prev.filter(q => q.id !== quizId));
+    setAssignments(prev => prev.filter(a => a.quizId !== quizId));
+  };
+
+  const deleteCandidate = (candidateId: string) => {
+    setCandidates(prev => prev.filter(c => c.id !== candidateId));
+    setAssignments(prev => prev.filter(a => a.candidateId !== candidateId));
   };
 
   return (
@@ -207,24 +197,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         t,
         activeRole,
         setActiveRole,
-        currentView,
-        setCurrentView,
-        activeStudentId,
-        setActiveStudentId,
-        students,
+        activeCandidateId,
+        setActiveCandidateId,
+        quizzes,
+        candidates,
         assignments,
-        tutors,
-        bookings,
-        permissionSlips,
-        threads,
-        isSyncing,
-        lastSyncedText,
-        syncWithLMS,
-        createBooking,
-        signPermissionSlip,
-        submitAssignment,
-        addAssignment,
-        sendMessage,
+        createQuiz,
+        createCandidate,
+        assignQuiz,
+        submitAssessment,
+        deleteQuiz,
+        deleteCandidate,
       }}
     >
       {children}
