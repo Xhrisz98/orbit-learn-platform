@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export const MarketplaceView: React.FC = () => {
-  const { tutors, students, createBooking } = useApp();
+  const { tutors, students, createBooking, t } = useApp();
 
   const [search, setSearch] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
@@ -27,11 +27,17 @@ export const MarketplaceView: React.FC = () => {
   const [selectedSlot, setSelectedSlot] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
-  const subjects = ['all', 'Matemáticas', 'Biología', 'Literatura', 'Programación', 'SAT Math'];
+  const subjects = ['all', 'Mathematics', 'Biology', 'Literature', 'Coding', 'SAT Math'];
 
   const filteredTutors = tutors.filter(tutor => {
-    if (selectedSubject !== 'all' && !tutor.subjects.some(s => s.toLowerCase().includes(selectedSubject.toLowerCase()))) {
-      return false;
+    if (selectedSubject !== 'all') {
+      const matchSub = tutor.subjects.some(s =>
+        s.toLowerCase().includes(selectedSubject.toLowerCase()) ||
+        (selectedSubject === 'Mathematics' && s.toLowerCase().includes('matemáticas')) ||
+        (selectedSubject === 'Biology' && s.toLowerCase().includes('biología')) ||
+        (selectedSubject === 'Coding' && s.toLowerCase().includes('programación'))
+      );
+      if (!matchSub) return false;
     }
     if (search) {
       const q = search.toLowerCase();
@@ -74,44 +80,44 @@ export const MarketplaceView: React.FC = () => {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold mb-3">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Marketplace Estilo Zillow para Educación</span>
+            <span>{t.marketplace.badge}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Encuentra y Reserva Tutores Verificados
+            {t.marketplace.heroTitle}
           </h1>
-          <p className="text-sm text-white/90 mt-2 leading-relaxed">
-            Especialistas con verificación de antecedentes y alineados con el currículum de las escuelas de tus hijos. Reserva al instante con pago protegido.
+          <p className="text-xs sm:text-sm text-white/90 mt-2 leading-relaxed">
+            {t.marketplace.heroSubtitle}
           </p>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-[#E8E4DF] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-2xl border border-[#E8E4DF] shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Search Input */}
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#52697C]" />
           <input
             type="text"
-            placeholder="Buscar por materia, tutor o examen..."
+            placeholder={t.marketplace.searchPlaceholder}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-[#E8E4DF] focus:outline-none focus:ring-1 focus:ring-[#0D8B8B] bg-[#F8F6F3]"
           />
         </div>
 
-        {/* Subject Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+        {/* Subject Pills (Scrollable on mobile) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
           {subjects.map(sub => (
             <button
               key={sub}
               onClick={() => setSelectedSubject(sub)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 selectedSubject === sub
                   ? 'bg-[#0D8B8B] text-white shadow-xs'
                   : 'bg-[#F8F6F3] text-[#52697C] hover:text-[#1A2332]'
               }`}
             >
-              {sub === 'all' ? 'Todas las Materias' : sub}
+              {sub === 'all' ? t.marketplace.allSubjects : sub}
             </button>
           ))}
         </div>
@@ -139,7 +145,7 @@ export const MarketplaceView: React.FC = () => {
                     </h3>
                     {tutor.isVerified && (
                       <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-                        <ShieldCheck className="w-3 h-3" /> Verificado
+                        <ShieldCheck className="w-3 h-3" /> {t.common.verified}
                       </span>
                     )}
                   </div>
@@ -148,12 +154,12 @@ export const MarketplaceView: React.FC = () => {
                     {tutor.title}
                   </p>
 
-                  <div className="flex items-center gap-3 mt-1.5 text-xs">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5 text-xs">
                     <span className="flex items-center gap-1 font-bold text-amber-600">
                       <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                       {tutor.rating}
                     </span>
-                    <span className="text-[#52697C]">({tutor.reviewsCount} reseñas)</span>
+                    <span className="text-[#52697C]">({tutor.reviewsCount} {t.common.reviews})</span>
                     <span className="text-[#52697C] flex items-center gap-1">
                       <MapPin className="w-3 h-3" /> {tutor.location}
                     </span>
@@ -168,8 +174,8 @@ export const MarketplaceView: React.FC = () => {
                 </p>
 
                 <div className="mt-2.5 flex items-center gap-1.5 text-xs text-[#1A2332] font-medium">
-                  <GraduationCap className="w-3.5 h-3.5 text-[#0D8B8B]" />
-                  <span>{tutor.education}</span>
+                  <GraduationCap className="w-3.5 h-3.5 text-[#0D8B8B] shrink-0" />
+                  <span className="truncate">{tutor.education}</span>
                 </div>
               </div>
 
@@ -187,23 +193,23 @@ export const MarketplaceView: React.FC = () => {
             </div>
 
             {/* Bottom Row: Next Available & CTA */}
-            <div className="mt-5 pt-4 border-t border-[#E8E4DF] flex items-center justify-between">
+            <div className="mt-5 pt-4 border-t border-[#E8E4DF] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <div className="text-xs text-[#52697C] flex items-center gap-1">
                   <Clock className="w-3 h-3 text-[#2ECC71]" />
-                  <span>Disponible: {tutor.nextAvailable}</span>
+                  <span>{t.marketplace.availableToday} {tutor.nextAvailable}</span>
                 </div>
                 <div className="text-base font-extrabold text-[#1A2332] mt-0.5">
-                  ${tutor.hourlyRate} <span className="text-xs font-normal text-[#52697C]">/ hora</span>
+                  ${tutor.hourlyRate} <span className="text-xs font-normal text-[#52697C]">{t.common.perHour}</span>
                 </div>
               </div>
 
               <button
                 onClick={() => handleOpenBooking(tutor)}
-                className="px-4 py-2 bg-[#0D8B8B] text-white text-xs font-semibold rounded-xl hover:bg-[#096363] transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+                className="w-full sm:w-auto px-4 py-2 bg-[#0D8B8B] text-white text-xs font-semibold rounded-xl hover:bg-[#096363] transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Calendar className="w-3.5 h-3.5" />
-                <span>Reservar Sesión</span>
+                <span>{t.marketplace.bookSession}</span>
               </button>
             </div>
           </div>
@@ -213,17 +219,17 @@ export const MarketplaceView: React.FC = () => {
       {/* Booking Modal */}
       {selectedTutorForBooking && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-[#E8E4DF] shadow-2xl relative">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-[#E8E4DF] shadow-2xl relative max-h-[90vh] overflow-y-auto">
             {bookingSuccess ? (
               <div className="text-center py-8 space-y-3">
                 <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-[#1A2332]">
-                  ¡Reserva Confirmada Exitosamente!
+                  {t.marketplace.successTitle}
                 </h3>
                 <p className="text-xs text-[#52697C]">
-                  Se ha añadido al calendario de {students.find(s => s.id === selectedStudentId)?.name} y se envió un correo con el enlace de la videollamada.
+                  {t.marketplace.successDesc}
                 </p>
               </div>
             ) : (
@@ -231,10 +237,10 @@ export const MarketplaceView: React.FC = () => {
                 <div className="flex items-start justify-between pb-4 border-b border-[#E8E4DF]">
                   <div>
                     <h3 className="text-lg font-bold text-[#1A2332]">
-                      Reservar Tutoría Privada
+                      {t.marketplace.modalTitle}
                     </h3>
                     <p className="text-xs text-[#52697C]">
-                      Con {selectedTutorForBooking.name} (${selectedTutorForBooking.hourlyRate}/hora)
+                      {t.marketplace.withTutor} {selectedTutorForBooking.name} (${selectedTutorForBooking.hourlyRate}{t.common.perHour})
                     </p>
                   </div>
                   <button
@@ -248,7 +254,7 @@ export const MarketplaceView: React.FC = () => {
                 <form onSubmit={handleConfirmBooking} className="space-y-4 mt-4">
                   <div>
                     <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                      ¿Para cuál de tus hijos es la sesión?
+                      {t.marketplace.whichChild}
                     </label>
                     <select
                       value={selectedStudentId}
@@ -263,10 +269,10 @@ export const MarketplaceView: React.FC = () => {
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                        Fecha
+                        {t.marketplace.date}
                       </label>
                       <input
                         type="date"
@@ -278,7 +284,7 @@ export const MarketplaceView: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                        Horario Disponible
+                        {t.marketplace.timeSlot}
                       </label>
                       <select
                         value={selectedSlot}
@@ -295,24 +301,24 @@ export const MarketplaceView: React.FC = () => {
                   </div>
 
                   {/* Summary & Price Checkout */}
-                  <div className="p-3 rounded-xl bg-[#F8F6F3] border border-[#E8E4DF] space-y-1.5 text-xs">
+                  <div className="p-3.5 rounded-xl bg-[#F8F6F3] border border-[#E8E4DF] space-y-1.5 text-xs">
                     <div className="flex justify-between text-[#52697C]">
-                      <span>Tarifa tutoría (1 hora):</span>
+                      <span>{t.marketplace.rateSummary}</span>
                       <span>${selectedTutorForBooking.hourlyRate}.00</span>
                     </div>
                     <div className="flex justify-between text-[#52697C]">
-                      <span>Comisión de servicio Orbit:</span>
-                      <span className="text-emerald-600 font-semibold">$0.00 (Incluido en Plan Familiar)</span>
+                      <span>{t.marketplace.orbitFee}</span>
+                      <span className="text-emerald-600 font-semibold">{t.marketplace.feeFree}</span>
                     </div>
                     <div className="border-t border-[#E8E4DF] pt-1.5 flex justify-between font-bold text-[#1A2332]">
-                      <span>Total a pagar:</span>
+                      <span>{t.marketplace.total}</span>
                       <span className="text-base text-[#0D8B8B]">${selectedTutorForBooking.hourlyRate}.00</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-[11px] text-[#52697C]">
-                    <CreditCard className="w-3.5 h-3.5 text-gray-400" />
-                    <span>Pago seguro procesado con Stripe • Garantía de satisfacción 100%</span>
+                    <CreditCard className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <span>{t.marketplace.secureNotice}</span>
                   </div>
 
                   <div className="flex gap-2 pt-2">
@@ -321,13 +327,13 @@ export const MarketplaceView: React.FC = () => {
                       onClick={() => setSelectedTutorForBooking(null)}
                       className="flex-1 py-2.5 text-xs font-semibold text-[#52697C] hover:bg-gray-100 rounded-xl cursor-pointer"
                     >
-                      Cancelar
+                      {t.common.cancel}
                     </button>
                     <button
                       type="submit"
                       className="flex-1 py-2.5 text-xs font-semibold bg-[#FF6B54] text-white rounded-xl hover:bg-[#FF5A40] transition-colors shadow-xs cursor-pointer"
                     >
-                      Confirmar y Pagar
+                      {t.marketplace.confirmPayBtn}
                     </button>
                   </div>
                 </form>

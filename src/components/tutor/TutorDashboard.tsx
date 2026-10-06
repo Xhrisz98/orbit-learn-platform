@@ -9,11 +9,10 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-
 export const TutorDashboard: React.FC = () => {
-  const { bookings, tutors } = useApp();
+  const { bookings, tutors, t } = useApp();
 
-  const currentTutor = tutors[0]; // Dra. Elena Rostova
+  const currentTutor = tutors[0]; // Dr. Elena Rostova
   const tutorBookings = bookings.filter(b => b.tutorId === currentTutor.id);
 
   const totalEarnings = tutorBookings.reduce((acc, b) => acc + b.hourlyRate, 0);
@@ -21,80 +20,80 @@ export const TutorDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white p-5 rounded-2xl border border-[#E8E4DF] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
+      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#E8E4DF] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-start sm:items-center gap-4">
           <img
             src={currentTutor.avatar}
             alt={currentTutor.name}
-            className="w-16 h-16 rounded-2xl object-cover ring-2 ring-amber-500/20 shadow-xs"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover ring-2 ring-amber-500/20 shadow-xs shrink-0"
           />
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-                Proveedor de Educación Verificado
+                {t.tutor.badge}
               </span>
               <span className="text-xs font-semibold text-emerald-600 flex items-center gap-0.5">
-                <ShieldCheck className="w-3.5 h-3.5" /> FERPA & Background Checked
+                <ShieldCheck className="w-3.5 h-3.5" /> {t.tutor.compliance}
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#1A2332]">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#1A2332] mt-1">
               {currentTutor.name}
             </h1>
             <p className="text-xs text-[#52697C]">{currentTutor.title}</p>
           </div>
         </div>
 
-        <div className="text-right">
-          <div className="text-2xl font-bold text-[#1A2332]">${currentTutor.hourlyRate}<span className="text-xs text-[#52697C]">/hora</span></div>
-          <div className="flex items-center gap-1 text-xs text-amber-600 font-semibold justify-end">
+        <div className="text-left sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+          <div className="text-2xl font-bold text-[#1A2332]">${currentTutor.hourlyRate}<span className="text-xs text-[#52697C]">{t.common.perHour}</span></div>
+          <div className="flex items-center gap-1 text-xs text-amber-600 font-semibold sm:justify-end">
             <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-            <span>{currentTutor.rating} ({currentTutor.reviewsCount} reseñas verificadas)</span>
+            <span>{currentTutor.rating} ({currentTutor.reviewsCount} {t.common.reviews})</span>
           </div>
         </div>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-[#E8E4DF] shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E4DF] shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#52697C] uppercase">Sesiones Reservadas</span>
+            <span className="text-xs font-semibold text-[#52697C] uppercase">{t.tutor.bookedSessions}</span>
             <Calendar className="w-4 h-4 text-[#0D8B8B]" />
           </div>
-          <p className="text-2xl font-bold text-[#1A2332] mt-2">{tutorBookings.length}</p>
-          <p className="text-xs text-[#52697C] mt-1">Con familias de West Valley School</p>
+          <p className="text-2xl sm:text-3xl font-bold text-[#1A2332] mt-2">{tutorBookings.length}</p>
+          <p className="text-xs text-[#52697C] mt-1">{t.tutor.withFamilies}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-[#E8E4DF] shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E4DF] shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#52697C] uppercase">Ingresos Estimados</span>
+            <span className="text-xs font-semibold text-[#52697C] uppercase">{t.tutor.estimatedEarnings}</span>
             <DollarSign className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-2xl font-bold text-emerald-600 mt-2">${totalEarnings}</p>
-          <p className="text-xs text-[#52697C] mt-1">Pagos directos garantizados por OrbitLearn</p>
+          <p className="text-2xl sm:text-3xl font-bold text-emerald-600 mt-2">${totalEarnings}</p>
+          <p className="text-xs text-[#52697C] mt-1">{t.tutor.guaranteedPayouts}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-[#E8E4DF] shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E4DF] shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#52697C] uppercase">Visibilidad en Marketplace</span>
+            <span className="text-xs font-semibold text-[#52697C] uppercase">{t.tutor.marketVisibility}</span>
             <TrendingUp className="w-4 h-4 text-purple-600" />
           </div>
-          <p className="text-2xl font-bold text-[#1A2332] mt-2">Top 5%</p>
-          <p className="text-xs text-[#52697C] mt-1">Especialista recomendada en Álgebra</p>
+          <p className="text-2xl sm:text-3xl font-bold text-[#1A2332] mt-2">{t.tutor.topRank}</p>
+          <p className="text-xs text-[#52697C] mt-1">{t.tutor.topSpecialist}</p>
         </div>
       </div>
 
       {/* Bookings Table */}
       <div className="bg-white rounded-2xl border border-[#E8E4DF] p-5 shadow-xs">
         <h2 className="text-base font-bold text-[#1A2332] mb-3">
-          Próximas Sesiones de Tutoría Programadas
+          {t.tutor.upcomingSessions}
         </h2>
 
         {tutorBookings.length === 0 ? (
-          <p className="text-xs text-[#52697C] py-6 text-center">No hay reservas activas en este momento.</p>
+          <p className="text-xs text-[#52697C] py-6 text-center">{t.tutor.noBookings}</p>
         ) : (
           <div className="divide-y divide-[#E8E4DF]">
             {tutorBookings.map(b => (
-              <div key={b.id} className="py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div key={b.id} className="py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-[#1A2332]">{b.studentName}</span>
@@ -108,12 +107,12 @@ export const TutorDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                   <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
-                    Confirmado (${b.hourlyRate})
+                    {t.common.confirmed} (${b.hourlyRate})
                   </span>
-                  <button className="px-3 py-1.5 bg-[#0D8B8B] text-white text-xs font-semibold rounded-xl hover:bg-[#096363] transition-colors cursor-pointer">
-                    Abrir Aula Virtual
+                  <button className="px-3.5 py-1.5 bg-[#0D8B8B] text-white text-xs font-semibold rounded-xl hover:bg-[#096363] transition-colors cursor-pointer shadow-xs">
+                    {t.tutor.openVirtualClassroom}
                   </button>
                 </div>
               </div>
@@ -124,11 +123,11 @@ export const TutorDashboard: React.FC = () => {
 
       {/* Slots Available Management */}
       <div className="bg-white rounded-2xl border border-[#E8E4DF] p-5 shadow-xs">
-        <h2 className="text-base font-bold text-[#1A2332] mb-2">
-          Tus Horarios Disponibles en el Marketplace
+        <h2 className="text-base font-bold text-[#1A2332] mb-1">
+          {t.tutor.availableSlotsTitle}
         </h2>
         <p className="text-xs text-[#52697C] mb-4">
-          Las familias pueden reservar de forma instantánea según estos horarios sincronizados con tu calendario.
+          {t.tutor.availableSlotsDesc}
         </p>
 
         <div className="flex flex-wrap gap-2">

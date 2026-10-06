@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { PlusCircle, CheckCircle } from 'lucide-react';
 
-
 export const TeacherDashboard: React.FC = () => {
-  const { assignments, addAssignment, students } = useApp();
+  const { assignments, addAssignment, students, t } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form state
@@ -45,58 +44,58 @@ export const TeacherDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Teacher Header */}
-      <div className="bg-white p-5 rounded-2xl border border-[#E8E4DF] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#E8E4DF] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-              Portal Docente
+              {t.teacher.portalBadge}
             </span>
-            <span className="text-xs text-[#52697C]">West Valley High School</span>
+            <span className="text-xs text-[#52697C]">{t.teacher.school}</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1A2332]">
-            Prof. Vance — Departamento de Ciencias & Matemáticas
+            {t.teacher.teacherName}
           </h1>
-          <p className="text-xs text-[#52697C]">
-            Gestión de tareas, calificaciones y permisos escolares
+          <p className="text-xs text-[#52697C] mt-0.5">
+            {t.teacher.subtitle}
           </p>
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Nueva Asignación</span>
+          <span>{t.teacher.newAssignmentBtn}</span>
         </button>
       </div>
 
       {/* Grid: Teacher classes overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-[#E8E4DF]">
-          <span className="text-xs font-semibold text-[#52697C] uppercase">Curso Activo</span>
-          <p className="text-lg font-bold text-[#1A2332] mt-1">Álgebra II (Periodo 3)</p>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E4DF] shadow-xs">
+          <span className="text-xs font-semibold text-[#52697C] uppercase">{t.teacher.activeCourse}</span>
+          <p className="text-lg font-bold text-[#1A2332] mt-1">{t.teacher.periodCourse}</p>
           <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1 font-medium">
-            <CheckCircle className="w-3.5 h-3.5" /> 28 Estudiantes sincronizados con Google Classroom
+            <CheckCircle className="w-3.5 h-3.5" /> {t.teacher.syncInfo}
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-[#E8E4DF]">
-          <span className="text-xs font-semibold text-[#52697C] uppercase">Asignaciones en Curso</span>
-          <p className="text-lg font-bold text-[#1A2332] mt-1">{teacherAssignments.length} Actividades</p>
-          <p className="text-xs text-[#52697C] mt-2">1 alerta de entrega vencida</p>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E4DF] shadow-xs">
+          <span className="text-xs font-semibold text-[#52697C] uppercase">{t.teacher.activeAssignments}</span>
+          <p className="text-lg font-bold text-[#1A2332] mt-1">{teacherAssignments.length} Assignments</p>
+          <p className="text-xs text-[#52697C] mt-2">1 overdue alert sent</p>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-[#E8E4DF]">
-          <span className="text-xs font-semibold text-[#52697C] uppercase">Cumplimiento / E-Sign</span>
-          <p className="text-lg font-bold text-[#1A2332] mt-1">1 Permiso Emitido</p>
-          <p className="text-xs text-amber-600 mt-2 font-medium">Excursión al Observatorio</p>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E4DF] shadow-xs">
+          <span className="text-xs font-semibold text-[#52697C] uppercase">{t.teacher.complianceSlip}</span>
+          <p className="text-lg font-bold text-[#1A2332] mt-1">1 Slip Issued</p>
+          <p className="text-xs text-amber-600 mt-2 font-medium">Observatory Field Trip</p>
         </div>
       </div>
 
       {/* List of assignments under Prof. Vance */}
       <div className="bg-white rounded-2xl border border-[#E8E4DF] p-5 shadow-xs">
         <h2 className="text-base font-bold text-[#1A2332] mb-4">
-          Tareas Asignadas Recientemente
+          {t.teacher.recentAssignmentsTitle}
         </h2>
 
         <div className="space-y-3">
@@ -106,17 +105,17 @@ export const TeacherDashboard: React.FC = () => {
               className="p-4 rounded-xl border border-[#E8E4DF] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
             >
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-gray-100 text-[#1A2332]">
                     {a.subject}
                   </span>
-                  <span className="text-xs text-[#52697C]">Estudiante: {a.studentName}</span>
+                  <span className="text-xs text-[#52697C]">{a.studentName}</span>
                   <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-sm">
                     {a.sourceLms}
                   </span>
                 </div>
                 <h3 className="font-bold text-sm text-[#1A2332] mt-1">{a.title}</h3>
-                <p className="text-xs text-[#52697C]">Vence: {a.dueDate} ({a.dueTime})</p>
+                <p className="text-xs text-[#52697C]">{t.parent.dueDate} {a.dueDate} ({a.dueTime})</p>
               </div>
 
               <span
@@ -129,10 +128,10 @@ export const TeacherDashboard: React.FC = () => {
                 }`}
               >
                 {a.status === 'missing'
-                  ? 'Sin entregar (Alerta a padres enviada)'
+                  ? t.common.missing
                   : a.status === 'submitted'
-                  ? 'Entregada por el alumno'
-                  : 'En plazo de entrega'}
+                  ? t.common.submitted
+                  : t.common.dueSoon}
               </span>
             </div>
           ))}
@@ -142,50 +141,50 @@ export const TeacherDashboard: React.FC = () => {
       {/* Create Assignment Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-[#E8E4DF] shadow-xl">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-[#E8E4DF] shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-[#1A2332] mb-1">
-              Publicar Nueva Asignación Escolar
+              {t.teacher.createModalTitle}
             </h3>
             <p className="text-xs text-[#52697C] mb-4">
-              Se sincronizará en tiempo real con Google Classroom y aparecerá en el panel familiar OrbitLearn
+              {t.teacher.createModalSubtitle}
             </p>
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                  Título de la Asignación
+                  {t.teacher.taskTitle}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej: Álgebra: Prueba de Ecuaciones Cuadráticas"
+                  placeholder="e.g. Algebra: Quadratic Equations Test"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   className="w-full text-xs p-2.5 rounded-xl border border-[#E8E4DF] focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                    Materia
+                    {t.teacher.subject}
                   </label>
                   <select
                     value={subject}
                     onChange={e => setSubject(e.target.value)}
                     className="w-full text-xs p-2.5 rounded-xl border border-[#E8E4DF]"
                   >
-                    <option>Matemáticas</option>
-                    <option>Ciencias</option>
-                    <option>Biología</option>
-                    <option>Física</option>
-                    <option>Historia</option>
+                    <option>Mathematics</option>
+                    <option>Science</option>
+                    <option>Biology</option>
+                    <option>Physics</option>
+                    <option>History</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                    Estudiante Asignado
+                    {t.teacher.assignedStudent}
                   </label>
                   <select
                     value={studentId}
@@ -201,10 +200,10 @@ export const TeacherDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                    Fecha de Entrega
+                    {t.teacher.dueDate}
                   </label>
                   <input
                     type="date"
@@ -212,12 +211,11 @@ export const TeacherDashboard: React.FC = () => {
                     value={dueDate}
                     onChange={e => setDueDate(e.target.value)}
                     className="w-full text-xs p-2.5 rounded-xl border border-[#E8E4DF]"
-                  >
-                  </input>
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                    Hora Límite
+                    {t.teacher.dueTime}
                   </label>
                   <input
                     type="text"
@@ -230,7 +228,7 @@ export const TeacherDashboard: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                  Plataforma de Sincronización
+                  {t.teacher.syncPlatform}
                 </label>
                 <select
                   value={sourceLms}
@@ -244,11 +242,11 @@ export const TeacherDashboard: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-[#1A2332] mb-1">
-                  Instrucciones o Criterios de Evaluación
+                  {t.teacher.instructions}
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Detallar entregables requeridos..."
+                  placeholder="Detail submission criteria..."
                   value={instructions}
                   onChange={e => setInstructions(e.target.value)}
                   className="w-full text-xs p-2.5 rounded-xl border border-[#E8E4DF] focus:outline-none focus:ring-1 focus:ring-emerald-600"
@@ -259,15 +257,15 @@ export const TeacherDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2 text-xs font-semibold text-[#52697C] hover:bg-gray-100 rounded-xl cursor-pointer"
+                  className="flex-1 py-2.5 text-xs font-semibold text-[#52697C] hover:bg-gray-100 rounded-xl cursor-pointer"
                 >
-                  Cancelar
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
+                  className="flex-1 py-2.5 text-xs font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
                 >
-                  Publicar y Notificar a Familia
+                  {t.teacher.publishBtn}
                 </button>
               </div>
             </form>

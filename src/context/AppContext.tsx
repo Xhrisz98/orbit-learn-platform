@@ -8,8 +8,14 @@ import {
   initialPermissionSlips,
   initialThreads,
 } from '../data/mockData';
+import { translations } from '../i18n/translations';
+import type { Language } from '../i18n/translations';
+
 
 interface AppContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: typeof translations['en'];
   activeRole: Role;
   setActiveRole: (role: Role) => void;
   currentView: 'dashboard' | 'marketplace' | 'compliance' | 'messages' | 'landing';
@@ -35,6 +41,11 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem('orbit_lang') as Language;
+    return saved === 'es' || saved === 'en' ? saved : 'en'; // English is default
+  });
+
   const [activeRole, setActiveRole] = useState<Role>('parent');
   const [currentView, setCurrentView] = useState<'dashboard' | 'marketplace' | 'compliance' | 'messages' | 'landing'>('dashboard');
   const [activeStudentId, setActiveStudentId] = useState<string>('all');
@@ -58,8 +69,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : initialThreads;
   });
 
+  const t = translations[language];
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('orbit_lang', lang);
+  };
+
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [lastSyncedText, setLastSyncedText] = useState<string>('Sincronizado hoy a las 10:30 AM');
+  const [lastSyncedText, setLastSyncedText] = useState<string>(() =>
+    language === 'en' ? 'Synced today at 10:30 AM' : 'Sincronizado hoy a las 10:30 AM'
+  );
 
   useEffect(() => {
     localStorage.setItem('orbit_assignments', JSON.stringify(assignments));
@@ -82,8 +102,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => {
       setIsSyncing(false);
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setLastSyncedText(`Sincronizado recién (${time}) con Google Classroom y Canvas`);
-    }, 1200);
+      setLastSyncedText(
+        language === 'en'
+          ? `Synced just now (${time}) with Google Classroom & Canvas`
+          : `Sincronizado recién (${time}) con Google Classroom y Canvas`
+      );
+    }, 1100);
   };
 
   const createBooking = (tutorId: string, studentId: string, date: string, timeSlot: string) => {
@@ -97,7 +121,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       tutorName: tutor.name,
       studentId,
       studentName: student.name,
-      subject: tutor.subjects[0] || 'Tutoría General',
+      subject: tutor.subjects[0] || (language === 'en' ? 'General Tutoring' : 'Tutoría General'),
       date,
       timeSlot,
       hourlyRate: tutor.hourlyRate,
@@ -115,7 +139,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return {
             ...slip,
             status: 'signed',
-            signedBy: signerName || 'Mark Miller (Padre)',
+            signedBy: signerName || (language === 'en' ? 'Mark Miller (Parent)' : 'Mark Miller (Padre)'),
             signedAt: new Date().toLocaleString(),
             signatureData: signatureCanvasData,
             ferpaAuditId: `FERPA-AUDIT-${Math.floor(1000 + Math.random() * 9000)}-WVH`,
@@ -156,17 +180,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (thread.id === threadId) {
           const newMsg = {
             id: `msg-${Date.now()}`,
-            senderName: activeRole === 'parent' ? 'Mark Miller' : 'Usuario',
-            senderRole: activeRole === 'parent' ? 'Padre' : activeRole,
+            senderName: activeRole === 'parent' ? 'Mark Miller' : (language === 'en' ? 'User' : 'Usuario'),
+            senderRole: activeRole === 'parent' ? t.roles.parent : t.roles[activeRole],
             avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
             content,
-            timestamp: 'Ahora',
+            timestamp: language === 'en' ? 'Just now' : 'Ahora',
             isCurrentUser: true,
           };
           return {
             ...thread,
             lastMessage: content,
-            lastTimestamp: 'Ahora',
+            lastTimestamp: language === 'en' ? 'Just now' : 'Ahora',
             messages: [...thread.messages, newMsg],
           };
         }
@@ -178,6 +202,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider
       value={{
+        language,
+        setLanguage,
+        t,
         activeRole,
         setActiveRole,
         currentView,

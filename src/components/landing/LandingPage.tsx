@@ -3,34 +3,33 @@ import { useApp } from '../../context/AppContext';
 import { Check, X, ArrowRight } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
-  const { setCurrentView, setActiveRole } = useApp();
+  const { setCurrentView, setActiveRole, t } = useApp();
   const [selectedRoleIndex, setSelectedRoleIndex] = useState(0);
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [emailInput, setEmailInput] = useState('');
 
-
   const roles = [
     {
       icon: '👨‍👩‍👧‍👦',
-      title: 'Parents',
+      title: t.roles.parent,
       roleKey: 'parent' as const,
       desc: "One dashboard for all kids, all schools. Know what's missing, what's due, and when to hire help.",
     },
     {
       icon: '📚',
-      title: 'Students',
+      title: t.roles.student,
       roleKey: 'student' as const,
       desc: 'Your planner. Your files. Homework uploads. Study groups. All in one place.',
     },
     {
       icon: '👨‍🏫',
-      title: 'Teachers',
+      title: t.roles.teacher,
       roleKey: 'teacher' as const,
       desc: 'Post assignments, collect work, e-sign permission slips, and connect families to support.',
     },
     {
       icon: '⭐',
-      title: 'Tutors & Providers',
+      title: t.roles.tutor,
       roleKey: 'tutor' as const,
       desc: 'Your verified listing. Lead notifications. Scheduling, booking, and payment all built in.',
     },
@@ -44,82 +43,82 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="space-y-16 pb-16">
       {/* Banner to launch MVP directly */}
-      <div className="bg-[#0D8B8B] text-white p-3 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+      <div className="bg-[#0D8B8B] text-white p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
         <div className="flex items-center gap-2 text-xs">
-          <span className="bg-[#FFE4DC] text-[#FF6B54] font-bold px-2 py-0.5 rounded-full text-[10px]">
-            MVP FUNCIONAL
+          <span className="bg-[#FFE4DC] text-[#FF6B54] font-bold px-2 py-0.5 rounded-full text-[10px] shrink-0">
+            MVP v1.1
           </span>
-          <span>Puedes interactuar con la aplicación completa en vivo.</span>
+          <span className="leading-snug">{t.landing.bannerText}</span>
         </div>
         <button
           onClick={() => setCurrentView('dashboard')}
-          className="flex items-center gap-1.5 px-4 py-1.5 bg-white text-[#0D8B8B] rounded-xl text-xs font-bold hover:bg-gray-100 transition-colors shadow-xs cursor-pointer"
+          className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 bg-white text-[#0D8B8B] rounded-xl text-xs font-bold hover:bg-gray-100 transition-colors shadow-xs cursor-pointer shrink-0"
         >
-          <span>Abrir Dashboard Interactivo</span>
+          <span>{t.landing.openAppCta}</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Hero Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center py-6">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center py-4 sm:py-6">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-black text-[#1A2332] tracking-tight leading-tight">
-            One platform. All your students' learning.
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#1A2332] tracking-tight leading-tight">
+            {t.landing.heroHeading}
           </h1>
-          <p className="mt-4 text-base sm:text-lg text-[#52697C] leading-relaxed">
-            Parents manage multiple school portals, tutors, and activities. OrbitLearn brings everything together—assignments, schedules, progress, and vetted education providers—in one family workspace.
+          <p className="mt-4 text-sm sm:text-base lg:text-lg text-[#52697C] leading-relaxed">
+            {t.landing.heroSubheading}
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
+          <div className="mt-8 flex flex-wrap gap-3 sm:gap-4">
             <button
               onClick={() => setCurrentView('dashboard')}
-              className="px-6 py-3 rounded-xl bg-[#FF6B54] text-white font-bold text-sm hover:bg-[#FF5A40] transition-transform hover:-translate-y-0.5 shadow-md shadow-[#FF6B54]/25 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#FF6B54] text-white font-bold text-sm hover:bg-[#FF5A40] transition-transform hover:-translate-y-0.5 shadow-md shadow-[#FF6B54]/25 cursor-pointer text-center"
             >
-              Start Free Trial (Abrir MVP)
+              {t.landing.startTrial}
             </button>
             <button
               onClick={() => setShowDemoModal(true)}
-              className="px-6 py-3 rounded-xl bg-white text-[#0D8B8B] font-bold text-sm border-2 border-[#0D8B8B] hover:bg-gray-50 transition-colors cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white text-[#0D8B8B] font-bold text-sm border-2 border-[#0D8B8B] hover:bg-gray-50 transition-colors cursor-pointer text-center"
             >
-              See Demo
+              {t.landing.seeDemo}
             </button>
           </div>
         </div>
 
         {/* Hero Visual */}
-        <div className="bg-gradient-to-tr from-[#0D8B8B] to-[#15A9A9] rounded-3xl p-8 sm:p-10 text-white flex flex-col items-center justify-center min-h-[380px] shadow-lg">
-          <div className="text-5xl mb-4">📊</div>
+        <div className="bg-gradient-to-tr from-[#0D8B8B] to-[#15A9A9] rounded-3xl p-6 sm:p-10 text-white flex flex-col items-center justify-center min-h-[340px] sm:min-h-[380px] shadow-lg">
+          <div className="text-4xl sm:text-5xl mb-4">📊</div>
           <div className="w-full max-w-xs bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 space-y-2.5">
             <div className="bg-white/15 p-3 rounded-xl text-xs text-left">
-              <strong className="block text-white font-bold">Alex's Math</strong>
-              <span className="text-red-200 font-semibold">Missing: 3 assignments</span>
+              <strong className="block text-white font-bold">{t.landing.alexMath}</strong>
+              <span className="text-red-200 font-semibold">{t.landing.alexMissing}</span>
             </div>
             <div className="bg-white/15 p-3 rounded-xl text-xs text-left">
-              <strong className="block text-white font-bold">Jordan's Science</strong>
-              <span className="text-teal-100">Due: Next Tuesday</span>
+              <strong className="block text-white font-bold">{t.landing.jordanScience}</strong>
+              <span className="text-teal-100">{t.landing.jordanDue}</span>
             </div>
             <div className="bg-white/15 p-3 rounded-xl text-xs text-left">
-              <strong className="block text-white font-bold">Tutor Available</strong>
-              <span className="text-amber-200">4.9★ Math specialist</span>
+              <strong className="block text-white font-bold">{t.landing.tutorAvailable}</strong>
+              <span className="text-amber-200">{t.landing.tutorStars}</span>
             </div>
           </div>
-          <p className="text-xs text-white/80 mt-4">See everything at a glance</p>
+          <p className="text-xs text-white/80 mt-4">{t.landing.seeAtGlance}</p>
         </div>
       </section>
 
       {/* Comparison Table: The Gap */}
-      <section className="bg-white rounded-3xl border border-[#E8E4DF] p-6 sm:p-8 shadow-xs">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-3">
-          No single product does all this
+      <section className="bg-white rounded-3xl border border-[#E8E4DF] p-5 sm:p-8 shadow-xs">
+        <h2 className="text-xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-2">
+          {t.landing.comparisonTitle}
         </h2>
-        <p className="text-center text-xs sm:text-sm text-[#52697C] max-w-xl mx-auto mb-8">
-          Comparativa de capacidades entre plataformas convencionales y OrbitLearn
+        <p className="text-center text-xs sm:text-sm text-[#52697C] max-w-xl mx-auto mb-6 sm:mb-8">
+          {t.landing.comparisonSubtitle}
         </p>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+        <div className="overflow-x-auto -mx-5 sm:mx-0 px-5 sm:px-0">
+          <table className="w-full text-left text-xs sm:text-sm min-w-[600px]">
             <thead>
               <tr className="border-b border-[#E8E4DF] bg-[#F8F6F3]">
-                <th className="p-3.5 font-bold text-[#1A2332]">Capacidad</th>
+                <th className="p-3.5 font-bold text-[#1A2332]">{t.landing.capability}</th>
                 <th className="p-3.5 text-[#52697C] font-semibold">Khan Academy</th>
                 <th className="p-3.5 text-[#52697C] font-semibold">Google Classroom</th>
                 <th className="p-3.5 text-[#52697C] font-semibold">Clever</th>
@@ -152,8 +151,8 @@ export const LandingPage: React.FC = () => {
 
       {/* Roles Section */}
       <section>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-8">
-          Built for everyone in the family
+        <h2 className="text-xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-6 sm:mb-8">
+          {t.landing.builtForEveryone}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {roles.map((r, idx) => (
@@ -163,13 +162,13 @@ export const LandingPage: React.FC = () => {
                 setSelectedRoleIndex(idx);
                 handleLaunchAppWithRole(r.roleKey);
               }}
-              className={`p-6 rounded-2xl border-2 transition-all cursor-pointer text-center ${
+              className={`p-5 sm:p-6 rounded-2xl border-2 transition-all cursor-pointer text-center ${
                 selectedRoleIndex === idx
                   ? 'bg-gradient-to-tr from-[#0D8B8B] to-[#15A9A9] text-white border-[#0D8B8B] shadow-md scale-102'
                   : 'bg-white border-[#E8E4DF] hover:border-[#0D8B8B] hover:shadow-xs'
               }`}
             >
-              <div className="text-4xl mb-3">{r.icon}</div>
+              <div className="text-3xl sm:text-4xl mb-3">{r.icon}</div>
               <h3 className={`text-base font-bold ${selectedRoleIndex === idx ? 'text-white' : 'text-[#1A2332]'}`}>
                 {r.title}
               </h3>
@@ -177,7 +176,7 @@ export const LandingPage: React.FC = () => {
                 {r.desc}
               </p>
               <span className={`inline-block mt-4 text-[11px] font-bold underline ${selectedRoleIndex === idx ? 'text-white' : 'text-[#0D8B8B]'}`}>
-                Probar rol en la app →
+                {t.landing.tryRoleInApp}
               </span>
             </div>
           ))}
@@ -186,10 +185,10 @@ export const LandingPage: React.FC = () => {
 
       {/* Features Grid */}
       <section>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-8">
-          Everything a modern family needs
+        <h2 className="text-xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-6 sm:mb-8">
+          {t.landing.featuresTitle}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[
             { icon: '🔐', title: 'Secure Role Switching', desc: 'Parents, students, teachers. Switch roles instantly. Each role sees only what matters to them.' },
             { icon: '📅', title: 'Assignment & Calendar Sync', desc: 'Pull assignments from Google Classroom, Canvas, and 50+ school platforms. One timeline, never miss a deadline.' },
@@ -210,15 +209,15 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Integrations Grid */}
-      <section className="bg-white rounded-3xl border border-[#E8E4DF] p-8 shadow-xs">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-2">
-          Connects to everything your school uses
+      <section className="bg-white rounded-3xl border border-[#E8E4DF] p-6 sm:p-8 shadow-xs">
+        <h2 className="text-xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-2">
+          {t.landing.integrationsTitle}
         </h2>
-        <p className="text-center text-xs sm:text-sm text-[#52697C] max-w-xl mx-auto mb-8">
-          OrbitLearn syncs seamlessly with the platforms your schools and tutors already use. Real-time data flow means no manual updates, no lost information.
+        <p className="text-center text-xs sm:text-sm text-[#52697C] max-w-xl mx-auto mb-6 sm:mb-8">
+          {t.landing.integrationsSubtitle}
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {[
             { icon: '📚', name: 'Google Classroom', status: 'Real-time Sync' },
             { icon: '🎓', name: 'Canvas LMS', status: 'Real-time Sync' },
@@ -226,11 +225,11 @@ export const LandingPage: React.FC = () => {
             { icon: '🎯', name: 'Khan Academy', status: 'Real-time Sync' },
             { icon: '📁', name: 'Google Workspace', status: 'Real-time Sync' },
             { icon: '✏️', name: 'SAT & ACT Prep', status: 'Real-time Sync' },
-            { icon: '💼', name: 'Microsoft Teams', status: 'Próximamente' },
+            { icon: '💼', name: 'Microsoft Teams', status: 'Coming Soon' },
             { icon: '🔐', name: 'Clever SSO', status: 'Real-time Sync' },
           ].map((item, i) => (
-            <div key={i} className="p-4 rounded-xl border border-[#E8E4DF] bg-[#F8F6F3]/50 text-center">
-              <div className="text-3xl mb-2">{item.icon}</div>
+            <div key={i} className="p-3.5 sm:p-4 rounded-xl border border-[#E8E4DF] bg-[#F8F6F3]/50 text-center">
+              <div className="text-2xl sm:text-3xl mb-1.5">{item.icon}</div>
               <h4 className="font-bold text-xs text-[#1A2332]">{item.name}</h4>
               <span className="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
                 {item.status}
@@ -242,20 +241,20 @@ export const LandingPage: React.FC = () => {
 
       {/* Pricing Section */}
       <section>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-2">
-          Simple, transparent pricing
+        <h2 className="text-xl sm:text-3xl font-extrabold text-[#1A2332] text-center mb-2">
+          {t.landing.pricingTitle}
         </h2>
         <p className="text-center text-xs sm:text-sm text-[#52697C] mb-8 font-medium">
-          7-day free trial on all paid plans. No credit card required.
+          {t.landing.pricingSubtitle}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Student */}
           <div className="bg-white p-6 rounded-2xl border border-[#E8E4DF] shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="font-bold text-lg text-[#1A2332]">Student</h3>
-              <p className="text-xs text-[#52697C]">For individual learners</p>
-              <div className="text-3xl font-black text-[#1A2332] my-4">Free</div>
+              <h3 className="font-bold text-lg text-[#1A2332]">{t.landing.studentPlan}</h3>
+              <p className="text-xs text-[#52697C]">{t.landing.forIndividuals}</p>
+              <div className="text-3xl font-black text-[#1A2332] my-4">{t.landing.freeForever}</div>
               <ul className="text-xs text-[#52697C] space-y-2 mb-6">
                 <li>✓ One school connection</li>
                 <li>✓ Planner & calendar</li>
@@ -272,15 +271,15 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Family (Featured) */}
-          <div className="bg-white p-6 rounded-2xl border-2 border-[#FF6B54] shadow-lg relative flex flex-col justify-between scale-102">
+          <div className="bg-white p-6 rounded-2xl border-2 border-[#FF6B54] shadow-lg relative flex flex-col justify-between sm:scale-102">
             <span className="absolute -top-3 right-6 bg-[#FF6B54] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase">
-              Most Popular
+              {t.landing.mostPopular}
             </span>
             <div>
-              <h3 className="font-bold text-lg text-[#1A2332]">Family</h3>
-              <p className="text-xs text-[#52697C]">For families up to 4 students</p>
+              <h3 className="font-bold text-lg text-[#1A2332]">{t.landing.familyPlan}</h3>
+              <p className="text-xs text-[#52697C]">{t.landing.forFamilies}</p>
               <div className="text-3xl font-black text-[#1A2332] my-4">
-                $12 <span className="text-xs font-normal text-[#52697C]">/ mes</span>
+                $12 <span className="text-xs font-normal text-[#52697C]">{t.landing.perMonth}</span>
               </div>
               <ul className="text-xs text-[#52697C] space-y-2 mb-6">
                 <li>✓ Multi-child dashboard (Alex & Jordan)</li>
@@ -295,17 +294,17 @@ export const LandingPage: React.FC = () => {
               onClick={() => handleLaunchAppWithRole('parent')}
               className="w-full py-2.5 rounded-xl bg-[#FF6B54] text-white text-xs font-bold hover:bg-[#FF5A40] transition-colors shadow-xs cursor-pointer"
             >
-              Start 7-Day Trial (Explorar)
+              {t.landing.startTrial}
             </button>
           </div>
 
           {/* Family Plus */}
           <div className="bg-white p-6 rounded-2xl border border-[#E8E4DF] shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="font-bold text-lg text-[#1A2332]">Family Plus</h3>
-              <p className="text-xs text-[#52697C]">For larger families</p>
+              <h3 className="font-bold text-lg text-[#1A2332]">{t.landing.familyPlusPlan}</h3>
+              <p className="text-xs text-[#52697C]">{t.landing.forLargeFamilies}</p>
               <div className="text-3xl font-black text-[#1A2332] my-4">
-                $22 <span className="text-xs font-normal text-[#52697C]">/ mes</span>
+                $22 <span className="text-xs font-normal text-[#52697C]">{t.landing.perMonth}</span>
               </div>
               <ul className="text-xs text-[#52697C] space-y-2 mb-6">
                 <li>✓ Unlimited children</li>
@@ -325,18 +324,18 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-[#0D8B8B] to-[#15A9A9] rounded-3xl p-8 text-white text-center shadow-lg">
+      <section className="bg-gradient-to-r from-[#0D8B8B] to-[#15A9A9] rounded-3xl p-6 sm:p-10 text-white text-center shadow-lg">
         <h2 className="text-2xl sm:text-3xl font-bold mb-2">
-          Ready to simplify your family's school life?
+          {t.landing.ctaHeading}
         </h2>
         <p className="text-xs sm:text-sm text-white/90 max-w-md mx-auto mb-6">
-          Start your 7-day free trial. No credit card required. Experience all roles right now.
+          {t.landing.ctaSubheading}
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center gap-2 max-w-md mx-auto">
           <input
             type="email"
-            placeholder="Enter your email"
+            placeholder={t.landing.emailPlaceholder}
             value={emailInput}
             onChange={e => setEmailInput(e.target.value)}
             className="px-4 py-2.5 rounded-xl text-xs bg-white text-[#1A2332] focus:outline-none"
@@ -345,7 +344,7 @@ export const LandingPage: React.FC = () => {
             onClick={() => setCurrentView('dashboard')}
             className="px-5 py-2.5 bg-[#FF6B54] text-white text-xs font-bold rounded-xl hover:bg-[#FF5A40] transition-colors cursor-pointer"
           >
-            Launch MVP
+            {t.landing.launchMvp}
           </button>
         </div>
       </section>
@@ -354,9 +353,9 @@ export const LandingPage: React.FC = () => {
       {showDemoModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-[#1A2332]">Schedule a Product Demo</h3>
+            <h3 className="text-lg font-bold text-[#1A2332]">Product Demo Preview</h3>
             <p className="text-xs text-[#52697C] mt-1 mb-4">
-              O simplemente explora directamente el MVP interactivo que ya está listo.
+              Explore the live interactive MVP directly with preloaded test data.
             </p>
             <div className="space-y-3">
               <button
@@ -366,13 +365,13 @@ export const LandingPage: React.FC = () => {
                 }}
                 className="w-full py-2.5 bg-[#0D8B8B] text-white text-xs font-bold rounded-xl cursor-pointer"
               >
-                Abrir Plataforma MVP Ahora
+                {t.landing.openAppCta}
               </button>
               <button
                 onClick={() => setShowDemoModal(false)}
                 className="w-full py-2 text-xs text-[#52697C] hover:bg-gray-100 rounded-xl cursor-pointer"
               >
-                Cerrar
+                {t.common.close}
               </button>
             </div>
           </div>

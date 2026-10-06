@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Send } from 'lucide-react';
+import { Send, ArrowLeft } from 'lucide-react';
 
 export const MessagesView: React.FC = () => {
-  const { threads, sendMessage } = useApp();
-
+  const { threads, sendMessage, t } = useApp();
   const [selectedThreadId, setSelectedThreadId] = useState(threads[0]?.id || '');
   const [inputText, setInputText] = useState('');
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
 
   const activeThread = threads.find(t => t.id === selectedThreadId) || threads[0];
+
+  const handleSelectThread = (threadId: string) => {
+    setSelectedThreadId(threadId);
+    setMobileChatOpen(true);
+  };
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,15 +23,19 @@ export const MessagesView: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E8E4DF] shadow-xs overflow-hidden flex flex-col md:flex-row h-[620px]">
-      {/* Threads Sidebar */}
-      <div className="w-full md:w-80 border-r border-[#E8E4DF] flex flex-col bg-[#F8F6F3]/50">
+    <div className="bg-white rounded-2xl border border-[#E8E4DF] shadow-xs overflow-hidden flex flex-col md:flex-row h-[600px] sm:h-[640px]">
+      {/* Threads Sidebar (Hidden on mobile if chat is open) */}
+      <div
+        className={`w-full md:w-80 border-r border-[#E8E4DF] flex flex-col bg-[#F8F6F3]/50 shrink-0 ${
+          mobileChatOpen ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         <div className="p-4 border-b border-[#E8E4DF] bg-white">
           <h2 className="text-base font-bold text-[#1A2332]">
-            Comunicaciones Escolares & Tutores
+            {t.messages.sidebarTitle}
           </h2>
           <p className="text-xs text-[#52697C]">
-            Canales organizados por estudiante y materia
+            {t.messages.sidebarSubtitle}
           </p>
         </div>
 
@@ -36,7 +45,7 @@ export const MessagesView: React.FC = () => {
             return (
               <button
                 key={thread.id}
-                onClick={() => setSelectedThreadId(thread.id)}
+                onClick={() => handleSelectThread(thread.id)}
                 className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors cursor-pointer ${
                   isSelected ? 'bg-white border-l-4 border-[#0D8B8B] shadow-xs' : 'hover:bg-gray-100/60'
                 }`}
@@ -54,7 +63,7 @@ export const MessagesView: React.FC = () => {
                     <span className="text-[10px] text-[#52697C]">{thread.lastTimestamp}</span>
                   </div>
 
-                  <p className="text-[11px] font-semibold text-[#0D8B8B] mt-0.5">
+                  <p className="text-[11px] font-semibold text-[#0D8B8B] mt-0.5 truncate">
                     {thread.recipientRole} {thread.studentTag && `• ${thread.studentTag}`}
                   </p>
 
@@ -68,13 +77,26 @@ export const MessagesView: React.FC = () => {
         </div>
       </div>
 
-      {/* Chat Messages Panel */}
-      <div className="flex-1 flex flex-col bg-white">
+      {/* Chat Messages Panel (Hidden on mobile if thread list is open) */}
+      <div
+        className={`flex-1 flex flex-col bg-white ${
+          !mobileChatOpen ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         {activeThread ? (
           <>
             {/* Chat Header */}
             <div className="p-4 border-b border-[#E8E4DF] flex items-center justify-between">
               <div className="flex items-center gap-3">
+                {/* Mobile Back Button */}
+                <button
+                  onClick={() => setMobileChatOpen(false)}
+                  className="md:hidden p-1.5 rounded-lg text-[#52697C] hover:text-[#1A2332] hover:bg-gray-100 cursor-pointer"
+                  title={t.messages.backToList}
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+
                 <img
                   src={activeThread.avatar}
                   alt={activeThread.recipientName}
@@ -85,13 +107,13 @@ export const MessagesView: React.FC = () => {
                     {activeThread.recipientName}
                   </h3>
                   <p className="text-xs text-[#52697C]">
-                    {activeThread.recipientRole} {activeThread.studentTag && `(Estudiante: ${activeThread.studentTag})`}
+                    {activeThread.recipientRole} {activeThread.studentTag && `(${activeThread.studentTag})`}
                   </p>
                 </div>
               </div>
 
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-[#0D8B8B]">
-                Canal Oficial Orbit
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-[#0D8B8B] hidden sm:inline-block">
+                {t.messages.officialChannel}
               </span>
             </div>
 
@@ -113,7 +135,7 @@ export const MessagesView: React.FC = () => {
                   )}
 
                   <div
-                    className={`max-w-md p-3.5 rounded-2xl text-xs leading-relaxed ${
+                    className={`max-w-xs sm:max-w-md p-3.5 rounded-2xl text-xs leading-relaxed ${
                       msg.isCurrentUser
                         ? 'bg-[#0D8B8B] text-white rounded-br-xs shadow-xs'
                         : 'bg-white text-[#1A2332] border border-[#E8E4DF] rounded-bl-xs shadow-xs'
@@ -141,7 +163,7 @@ export const MessagesView: React.FC = () => {
             <form onSubmit={handleSend} className="p-3 border-t border-[#E8E4DF] flex items-center gap-2">
               <input
                 type="text"
-                placeholder={`Responder a ${activeThread.recipientName}...`}
+                placeholder={`${t.messages.replyPlaceholder} ${activeThread.recipientName}...`}
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
                 className="flex-1 text-xs p-2.5 rounded-xl border border-[#E8E4DF] focus:outline-none focus:ring-1 focus:ring-[#0D8B8B] bg-[#F8F6F3]"
@@ -149,16 +171,16 @@ export const MessagesView: React.FC = () => {
               <button
                 type="submit"
                 disabled={!inputText.trim()}
-                className="px-4 py-2.5 bg-[#0D8B8B] text-white rounded-xl text-xs font-semibold hover:bg-[#096363] disabled:opacity-50 transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2.5 bg-[#0D8B8B] text-white rounded-xl text-xs font-semibold hover:bg-[#096363] disabled:opacity-50 transition-colors shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
               >
-                <span>Enviar</span>
+                <span className="hidden sm:inline">{t.messages.sendBtn}</span>
                 <Send className="w-3.5 h-3.5" />
               </button>
             </form>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-xs text-[#52697C]">
-            Selecciona una conversación
+            {t.messages.selectThread}
           </div>
         )}
       </div>

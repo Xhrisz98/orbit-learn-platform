@@ -3,15 +3,15 @@ import { useApp } from '../../context/AppContext';
 import { Users, AlertTriangle } from 'lucide-react';
 
 export const StudentSelector: React.FC = () => {
-  const { students, activeStudentId, setActiveStudentId, assignments } = useApp();
+  const { students, activeStudentId, setActiveStudentId, assignments, t } = useApp();
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6">
       <span className="text-xs font-semibold text-[#52697C] uppercase tracking-wider mr-1">
-        Ver datos de:
+        {t.parent.viewDataFor}
       </span>
 
-      {/* Button: Todos los Hijos */}
+      {/* Button: All Children */}
       <button
         onClick={() => setActiveStudentId('all')}
         className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
@@ -21,7 +21,7 @@ export const StudentSelector: React.FC = () => {
         }`}
       >
         <Users className="w-3.5 h-3.5" />
-        <span>Todos ({students.length} hijos)</span>
+        <span>{t.parent.allChildren} ({students.length})</span>
       </button>
 
       {/* Each Child */}
@@ -36,7 +36,7 @@ export const StudentSelector: React.FC = () => {
           <button
             key={student.id}
             onClick={() => setActiveStudentId(student.id)}
-            className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               isSelected
                 ? 'bg-[#0D8B8B] text-white shadow-xs'
                 : 'bg-white text-[#1A2332] border border-[#E8E4DF] hover:bg-gray-50'
@@ -65,7 +65,7 @@ export const StudentSelector: React.FC = () => {
                     ? 'bg-[#FF6B54] text-white'
                     : 'bg-[#FFE4DC] text-[#FF6B54]'
                 }`}
-                title={`${missingCount} tareas vencidas`}
+                title={`${missingCount} ${t.common.missing}`}
               >
                 <AlertTriangle className="w-2.5 h-2.5" />
                 {missingCount}
