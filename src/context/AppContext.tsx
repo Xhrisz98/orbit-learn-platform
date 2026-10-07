@@ -23,6 +23,7 @@ interface AppContextType {
   candidates: Candidate[];
   assignments: AssessmentAssignment[];
   createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => void;
+  updateQuiz: (quizId: string, updatedData: Partial<Quiz>) => void;
   createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => void;
   assignQuiz: (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => void;
   assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => void;
@@ -215,6 +216,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const updateQuiz = (quizId: string, updatedData: Partial<Quiz>) => {
+    setQuizzes(prev =>
+      prev.map(q => (q.id === quizId ? { ...q, ...updatedData } : q))
+    );
+    if (updatedData.title) {
+      setAssignments(prev =>
+        prev.map(a => (a.quizId === quizId ? { ...a, quizTitle: updatedData.title! } : a))
+      );
+    }
+  };
+
   const deleteQuiz = (quizId: string) => {
     setQuizzes(prev => prev.filter(q => q.id !== quizId));
     setAssignments(prev => prev.filter(a => a.quizId !== quizId));
@@ -239,6 +251,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         candidates,
         assignments,
         createQuiz,
+        updateQuiz,
         createCandidate,
         assignQuiz,
         assignCustomQuiz,

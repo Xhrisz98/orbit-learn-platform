@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import type { AssessmentAssignment } from '../../types';
+import type { AssessmentAssignment, Quiz } from '../../types';
 import { QuizBuilderModal } from './QuizBuilderModal';
 import { CandidateModal } from './CandidateModal';
 import { AssignQuizModal } from './AssignQuizModal';
@@ -17,6 +17,7 @@ import {
   Clock,
   Eye,
   Trash2,
+  Edit3,
 } from 'lucide-react';
 
 
@@ -35,6 +36,7 @@ export const RecruiterDashboard: React.FC = () => {
 
   // Modals state
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
   const [isCandidateModalOpen, setIsCandidateModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAuditAssignment, setSelectedAuditAssignment] = useState<AssessmentAssignment | null>(null);
@@ -86,7 +88,10 @@ export const RecruiterDashboard: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setIsQuizModalOpen(true)}
+            onClick={() => {
+              setEditingQuiz(null);
+              setIsQuizModalOpen(true);
+            }}
             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 text-[#2368f5] text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer"
           >
             <PlusCircle className="w-3.5 h-3.5" />
@@ -396,7 +401,10 @@ export const RecruiterDashboard: React.FC = () => {
               <p className="text-xs text-slate-500">{t.recruiter.quizzes.subtitle}</p>
             </div>
             <button
-              onClick={() => setIsQuizModalOpen(true)}
+              onClick={() => {
+                setEditingQuiz(null);
+                setIsQuizModalOpen(true);
+              }}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2368f5] text-white text-xs font-bold hover:bg-[#144cc0] transition-colors cursor-pointer shadow-xs"
             >
               <PlusCircle className="w-3.5 h-3.5" />
@@ -415,13 +423,29 @@ export const RecruiterDashboard: React.FC = () => {
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-[#2368f5]">
                       {quiz.category}
                     </span>
-                    <button
-                      onClick={() => deleteQuiz(quiz.id)}
-                      className="text-slate-300 hover:text-red-500 p-1 cursor-pointer"
-                      title="Delete quiz"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setEditingQuiz(quiz);
+                          setIsQuizModalOpen(true);
+                        }}
+                        className="text-slate-400 hover:text-[#2368f5] p-1.5 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                        title={t.recruiter.quizzes.editBtn}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`${t.recruiter.quizzes.confirmDelete} "${quiz.title}"?`)) {
+                            deleteQuiz(quiz.id);
+                          }
+                        }}
+                        className="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Delete quiz"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <h3 className="font-bold text-sm text-slate-900">{quiz.title}</h3>
@@ -436,15 +460,27 @@ export const RecruiterDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                   <span className="text-[11px] text-slate-400">Created: {quiz.createdAt}</span>
-                  <button
-                    onClick={() => setIsAssignModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-[#10243e] text-white text-xs font-bold hover:bg-[#1c3553] transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    <SendHorizontal className="w-3 h-3" />
-                    <span>{t.recruiter.quizzes.assignBtn}</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        setEditingQuiz(quiz);
+                        setIsQuizModalOpen(true);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <Edit3 className="w-3 h-3 text-[#2368f5]" />
+                      <span>{t.recruiter.quizzes.editBtn}</span>
+                    </button>
+                    <button
+                      onClick={() => setIsAssignModalOpen(true)}
+                      className="px-3 py-1.5 rounded-xl bg-[#10243e] text-white text-xs font-bold hover:bg-[#1c3553] transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <SendHorizontal className="w-3 h-3" />
+                      <span>{t.recruiter.quizzes.assignBtn}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -530,7 +566,11 @@ export const RecruiterDashboard: React.FC = () => {
       {/* Modals */}
       <QuizBuilderModal
         isOpen={isQuizModalOpen}
-        onClose={() => setIsQuizModalOpen(false)}
+        quizToEdit={editingQuiz}
+        onClose={() => {
+          setIsQuizModalOpen(false);
+          setEditingQuiz(null);
+        }}
       />
 
       <CandidateModal

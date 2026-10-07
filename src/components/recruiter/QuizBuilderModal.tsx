@@ -1,36 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import type { Question } from '../../types';
+import type { Quiz, Question } from '../../types';
 import { PlusCircle, Trash2, CheckCircle2, X } from 'lucide-react';
-
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  quizToEdit?: Quiz | null;
 }
 
-export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { createQuiz, t } = useApp();
+export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit }) => {
+  const { createQuiz, updateQuiz, t } = useApp();
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(20);
+  const [questions, setQuestions] = useState<Question[]>([]);
 
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: `q-${Date.now()}-1`,
-      text: '',
-      options: [
-        { id: 'opt-1', text: '' },
-        { id: 'opt-2', text: '' },
-        { id: 'opt-3', text: '' },
-        { id: 'opt-4', text: '' },
-      ],
-      correctOptionIds: ['opt-1'],
-      explanation: '',
-    },
-  ]);
+  useEffect(() => {
+    if (isOpen) {
+      if (quizToEdit) {
+        setTitle(quizToEdit.title);
+        setCategory(quizToEdit.category);
+        setDescription(quizToEdit.description);
+        setTimeLimitMinutes(quizToEdit.timeLimitMinutes || 20);
+        setQuestions(JSON.parse(JSON.stringify(quizToEdit.questions)));
+      } else {
+        setTitle('');
+        setCategory('');
+        setDescription('');
+        setTimeLimitMinutes(20);
+        setQuestions([
+          {
+            id: `q-${Date.now()}-1`,
+            text: '',
+            categoryTag: '',
+            explanation: '',
+            options: [
+              { id: 'opt-1', text: '' },
+              { id: 'opt-2', text: '' },
+              { id: 'opt-3', text: '' },
+              { id: 'opt-4', text: '' },
+            ],
+            correctOptionIds: ['opt-1'],
+          },
+        ]);
+      }
+    }
+  }, [isOpen, quizToEdit]);
 
   if (!isOpen) return null;
 
@@ -38,13 +56,14 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
     const newQ: Question = {
       id: `q-${Date.now()}-${questions.length + 1}`,
       text: '',
+      categoryTag: '',
+      explanation: '',
       options: [
         { id: `opt-${Date.now()}-1`, text: '' },
         { id: `opt-${Date.now()}-2`, text: '' },
         { id: `opt-${Date.now()}-3`, text: '' },
       ],
       correctOptionIds: [],
-      explanation: '',
     };
     setQuestions([...questions, newQ]);
   };
@@ -57,6 +76,18 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const handleQuestionTextChange = (qIndex: number, text: string) => {
     const updated = [...questions];
     updated[qIndex].text = text;
+    setQuestions(updated);
+  };
+
+  const handleCategoryTagChange = (qIndex: number, tag: string) => {
+    const updated = [...questions];
+    updated[qIndex].categoryTag = tag;
+    setQuestions(updated);
+  };
+
+  const handleExplanationChange = (qIndex: number, explanation: string) => {
+    const updated = [...questions];
+    updated[qIndex].explanation = explanation;
     setQuestions(updated);
   };
 
@@ -107,13 +138,23 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
       return;
     }
 
-    createQuiz({
-      title,
-      category: category || 'General Skills',
-      description,
-      timeLimitMinutes,
-      questions,
-    });
+    if (quizToEdit) {
+      updateQuiz(quizToEdit.id, {
+        title,
+        category: category || 'General Skills',
+        description,
+        timeLimitMinutes,
+        questions,
+      });
+    } else {
+      createQuiz({
+        title,
+        category: category || 'General Skills',
+        description,
+        timeLimitMinutes,
+        questions,
+      });
+    }
 
     onClose();
   };
@@ -125,10 +166,10 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
         <div className="flex items-start justify-between pb-4 border-b border-slate-200 shrink-0">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-              {t.recruiter.createQuizModal.title}
+              {quizToEdit ? t.recruiter.createQuizModal.editTitle : t.recruiter.createQuizModal.title}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {t.recruiter.createQuizModal.subtitle}
+              {quizToEdit ? t.recruiter.createQuizModal.editSubtitle : t.recruiter.createQuizModal.subtitle}
             </p>
           </div>
           <button
@@ -252,6 +293,24 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     )}
                   </div>
 
+                  {/* Sub-tag and Explanation */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-0 sm:pl-9">
+                    <input
+                      type="text"
+                      placeholder={t.recruiter.createQuizModal.categoryTagPlaceholder}
+                      value={q.categoryTag || ''}
+                      onChange={e => handleCategoryTagChange(qIndex, e.target.value)}
+                      className="text-xs p-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                    />
+                    <input
+                      type="text"
+                      placeholder={t.recruiter.createQuizModal.explanationPlaceholder}
+                      value={q.explanation || ''}
+                      onChange={e => handleExplanationChange(qIndex, e.target.value)}
+                      className="text-xs p-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                    />
+                  </div>
+
                   {/* Options List */}
                   <div className="pl-0 sm:pl-9 space-y-2">
                     <p className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
@@ -331,7 +390,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
               type="submit"
               className="flex-1 py-2.5 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] transition-colors shadow-xs cursor-pointer"
             >
-              {t.recruiter.createQuizModal.saveQuizBtn}
+              {quizToEdit ? t.recruiter.createQuizModal.updateQuizBtn : t.recruiter.createQuizModal.saveQuizBtn}
             </button>
           </div>
         </form>
