@@ -153,7 +153,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 placeholder={t.recruiter.createQuizModal.titlePlaceholder}
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
               />
             </div>
 
@@ -166,7 +166,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 placeholder={t.recruiter.createQuizModal.categoryPlaceholder}
                 value={category}
                 onChange={e => setCategory(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
               />
             </div>
 
@@ -180,7 +180,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 max={120}
                 value={timeLimitMinutes}
                 onChange={e => setTimeLimitMinutes(Number(e.target.value))}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
               />
             </div>
 
@@ -193,7 +193,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 placeholder={t.recruiter.createQuizModal.descPlaceholder}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
               />
             </div>
           </div>
@@ -213,7 +213,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={handleAddQuestion}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl hover:bg-indigo-100 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-[#2368f5] text-xs font-bold rounded-xl hover:bg-blue-100 transition-colors cursor-pointer"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span>{t.recruiter.createQuizModal.addQuestionBtn}</span>
@@ -227,7 +227,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   className="bg-slate-50/70 rounded-2xl p-4 sm:p-5 border border-slate-200 space-y-3.5"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                    <span className="w-6 h-6 rounded-full bg-[#2368f5] text-white font-bold text-xs flex items-center justify-center shrink-0">
                       {qIndex + 1}
                     </span>
 
@@ -237,7 +237,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
                       placeholder={t.recruiter.createQuizModal.questionPlaceholder}
                       value={q.text}
                       onChange={e => handleQuestionTextChange(qIndex, e.target.value)}
-                      className="flex-1 text-xs font-medium p-2.5 bg-white rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                      className="flex-1 text-xs font-medium p-2.5 bg-white rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
                     />
 
                     {questions.length > 1 && (
@@ -288,7 +288,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
                             className={`flex-1 text-xs p-2 rounded-xl bg-white border focus:outline-none focus:ring-1 ${
                               isCorrect
                                 ? 'border-emerald-500 bg-emerald-50/20 focus:ring-emerald-600 font-medium'
-                                : 'border-slate-300 focus:ring-indigo-600'
+                                : 'border-slate-300 focus:ring-[#2368f5]'
                             }`}
                           />
 
@@ -308,7 +308,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     <button
                       type="button"
                       onClick={() => handleAddOption(qIndex)}
-                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1 cursor-pointer"
+                      className="text-[11px] font-bold text-[#2368f5] hover:text-[#144cc0] pt-1 cursor-pointer"
                     >
                       {t.recruiter.createQuizModal.addOptionBtn}
                     </button>
@@ -329,7 +329,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 text-xs font-bold bg-[#4F46E5] text-white rounded-xl hover:bg-[#4338CA] transition-colors shadow-xs cursor-pointer"
+              className="flex-1 py-2.5 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] transition-colors shadow-xs cursor-pointer"
             >
               {t.recruiter.createQuizModal.saveQuizBtn}
             </button>

@@ -63,7 +63,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
               placeholder={t.recruiter.createCandidateModal.namePlaceholder}
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
             />
           </div>
 
@@ -77,7 +77,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
               placeholder={t.recruiter.createCandidateModal.emailPlaceholder}
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
             />
           </div>
 
@@ -90,7 +90,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
               placeholder={t.recruiter.createCandidateModal.rolePlaceholder}
               value={roleApplied}
               onChange={e => setRoleApplied(e.target.value)}
-              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
             />
           </div>
 
@@ -104,7 +104,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 text-xs font-bold bg-[#4F46E5] text-white rounded-xl hover:bg-[#4338CA] transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>{t.recruiter.createCandidateModal.saveBtn}</span>

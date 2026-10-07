@@ -34,20 +34,20 @@ export const CandidatePortal: React.FC = () => {
           <img
             src={currentCandidate.avatar}
             alt={currentCandidate.name}
-            className="w-16 h-16 rounded-2xl object-cover ring-2 ring-indigo-200 shadow-xs shrink-0"
+            className="w-16 h-16 rounded-2xl object-cover ring-2 ring-blue-200 shadow-xs shrink-0"
           />
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-[#2368f5]">
                 {t.candidate.portalBadge}
               </span>
-              <span className="text-xs text-slate-400">• Candidate ID: {currentCandidate.id}</span>
+              <span className="text-xs text-[#60738a]">• Candidate ID: {currentCandidate.id}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-[#10243e] tracking-tight">
               {currentCandidate.name}
             </h1>
-            <p className="text-xs text-indigo-700 font-semibold mt-0.5">
-              {currentCandidate.roleApplied} • <span className="text-slate-400 font-normal">{currentCandidate.email}</span>
+            <p className="text-xs text-[#2368f5] font-semibold mt-0.5">
+              {currentCandidate.roleApplied} • <span className="text-[#60738a] font-normal">{currentCandidate.email}</span>
             </p>
           </div>
         </div>
@@ -64,7 +64,7 @@ export const CandidatePortal: React.FC = () => {
                 onClick={() => setActiveCandidateId(c.id)}
                 className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   c.id === currentCandidate.id
-                    ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                    ? 'bg-[#2368f5] text-white shadow-xs font-bold'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
@@ -101,18 +101,18 @@ export const CandidatePortal: React.FC = () => {
                   key={assignment.id}
                   className={`bg-white rounded-2xl border p-5 shadow-xs flex flex-col justify-between transition-all ${
                     isCompleted
-                      ? 'border-slate-200'
-                      : 'border-indigo-300 ring-2 ring-indigo-500/10'
+                      ? 'border-[#dfe7f1]'
+                      : 'border-[#2368f5] ring-2 ring-[#2368f5]/10'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#f5f8fc] text-[#2368f5] border border-[#dfe7f1]">
                         {quiz?.category || 'Assessment'}
                       </span>
 
                       {isCompleted ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-[#2368f5]">
                           <CheckCircle2 className="w-3 h-3" />
                           <span>{t.candidate.completedBadge}</span>
                         </span>
@@ -124,17 +124,17 @@ export const CandidatePortal: React.FC = () => {
                       )}
                     </div>
 
-                    <h3 className="font-bold text-base text-slate-900">
+                    <h3 className="font-bold text-base text-[#10243e]">
                       {assignment.quizTitle}
                     </h3>
 
                     {quiz?.description && (
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-[#60738a] mt-1 line-clamp-2 leading-relaxed">
                         {quiz.description}
                       </p>
                     )}
 
-                    <div className="mt-3 flex items-center gap-3 text-xs text-slate-500 font-semibold">
+                    <div className="mt-3 flex items-center gap-3 text-xs text-[#60738a] font-semibold">
                       <span>{assignment.totalQuestions} questions</span>
                       <span>•</span>
                       <span>{quiz?.timeLimitMinutes || 20} mins</span>
@@ -146,10 +146,10 @@ export const CandidatePortal: React.FC = () => {
                     {isCompleted ? (
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-[11px] text-slate-400 block">{t.candidate.scoreBadge}</span>
-                          <span className="text-xl font-black text-slate-900">
+                          <span className="text-[11px] text-[#60738a] block">{t.candidate.scoreBadge}</span>
+                          <span className="text-xl font-black text-[#10243e]">
                             {assignment.score}%{' '}
-                            <span className="text-xs font-normal text-slate-500">
+                            <span className="text-xs font-normal text-[#60738a]">
                               ({assignment.correctAnswersCount}/{assignment.totalQuestions})
                             </span>
                           </span>
@@ -158,7 +158,7 @@ export const CandidatePortal: React.FC = () => {
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-bold ${
                             (assignment.score ?? 0) >= 75
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-emerald-100 text-[#22a06b]'
                               : 'bg-amber-100 text-amber-800'
                           }`}
                         >
@@ -168,7 +168,7 @@ export const CandidatePortal: React.FC = () => {
                     ) : (
                       <button
                         onClick={() => setActiveTestAssignment(assignment)}
-                        className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-[#2368f5] text-white rounded-xl text-xs font-bold hover:bg-[#144cc0] transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
                       >
                         <PlayCircle className="w-4 h-4" />
                         <span>{t.candidate.startTestBtn}</span>

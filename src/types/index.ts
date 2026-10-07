@@ -9,6 +9,7 @@ export interface Question {
   }[];
   correctOptionIds: string[]; // Supports single or multiple correct answers
   explanation?: string;
+  categoryTag?: string;
 }
 
 export interface Quiz {
@@ -40,6 +41,7 @@ export interface AssessmentAssignment {
   roleApplied: string;
   quizId: string;
   quizTitle: string;
+  selectedQuestionIds?: string[]; // IDs of questions manually picked by recruiter
   status: AssessmentStatus;
   score?: number; // 0 to 100
   totalQuestions: number;

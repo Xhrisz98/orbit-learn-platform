@@ -87,7 +87,7 @@ export const RecruiterDashboard: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsQuizModalOpen(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 text-[#2368f5] text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>{t.recruiter.quizzes.newQuizBtn}</span>
@@ -95,7 +95,7 @@ export const RecruiterDashboard: React.FC = () => {
 
           <button
             onClick={() => setIsCandidateModalOpen(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 text-[#10243e] text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <Users className="w-3.5 h-3.5" />
             <span>{t.recruiter.candidates.newCandidateBtn}</span>
@@ -103,7 +103,7 @@ export const RecruiterDashboard: React.FC = () => {
 
           <button
             onClick={() => setIsAssignModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#4F46E5] text-white text-xs font-bold hover:bg-[#4338CA] transition-colors shadow-xs cursor-pointer"
+            className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#2368f5] text-white text-xs font-bold hover:bg-[#144cc0] transition-colors shadow-xs cursor-pointer"
           >
             <SendHorizontal className="w-3.5 h-3.5" />
             <span>{t.recruiter.candidates.assignQuizBtn}</span>
@@ -119,12 +119,12 @@ export const RecruiterDashboard: React.FC = () => {
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               {t.recruiter.metrics.totalCandidates}
             </span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#2368f5] flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-slate-900">{totalCandidatesCount}</span>
+            <span className="text-3xl font-black text-[#10243e]">{totalCandidatesCount}</span>
             <span className="text-xs text-slate-400">in pool</span>
           </div>
         </div>
@@ -184,7 +184,7 @@ export const RecruiterDashboard: React.FC = () => {
           onClick={() => setActiveTab('pipeline')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'pipeline'
-              ? 'bg-[#4F46E5] text-white shadow-xs'
+              ? 'bg-[#2368f5] text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
@@ -196,7 +196,7 @@ export const RecruiterDashboard: React.FC = () => {
           onClick={() => setActiveTab('quizzes')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'quizzes'
-              ? 'bg-[#4F46E5] text-white shadow-xs'
+              ? 'bg-[#2368f5] text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
@@ -208,7 +208,7 @@ export const RecruiterDashboard: React.FC = () => {
           onClick={() => setActiveTab('candidates')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'candidates'
-              ? 'bg-[#4F46E5] text-white shadow-xs'
+              ? 'bg-[#2368f5] text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
@@ -229,7 +229,7 @@ export const RecruiterDashboard: React.FC = () => {
                 placeholder={t.recruiter.pipeline.searchPlaceholder}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
               />
             </div>
 
@@ -362,7 +362,7 @@ export const RecruiterDashboard: React.FC = () => {
                         {item.status === 'completed' ? (
                           <button
                             onClick={() => setSelectedAuditAssignment(item)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold hover:bg-indigo-100 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-[#2368f5] font-bold hover:bg-blue-100 transition-colors cursor-pointer"
                           >
                             <Eye className="w-3 h-3" />
                             <span>{t.recruiter.pipeline.viewAudit}</span>
@@ -397,7 +397,7 @@ export const RecruiterDashboard: React.FC = () => {
             </div>
             <button
               onClick={() => setIsQuizModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#4F46E5] text-white text-xs font-bold hover:bg-[#4338CA] transition-colors cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2368f5] text-white text-xs font-bold hover:bg-[#144cc0] transition-colors cursor-pointer shadow-xs"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>{t.recruiter.quizzes.newQuizBtn}</span>
@@ -408,11 +408,11 @@ export const RecruiterDashboard: React.FC = () => {
             {quizzes.map(quiz => (
               <div
                 key={quiz.id}
-                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all"
+                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between hover:border-[#2368f5] transition-all"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-[#2368f5]">
                       {quiz.category}
                     </span>
                     <button
@@ -440,7 +440,7 @@ export const RecruiterDashboard: React.FC = () => {
                   <span className="text-[11px] text-slate-400">Created: {quiz.createdAt}</span>
                   <button
                     onClick={() => setIsAssignModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-xl bg-[#10243e] text-white text-xs font-bold hover:bg-[#1c3553] transition-colors cursor-pointer flex items-center gap-1"
                   >
                     <SendHorizontal className="w-3 h-3" />
                     <span>{t.recruiter.quizzes.assignBtn}</span>
@@ -462,7 +462,7 @@ export const RecruiterDashboard: React.FC = () => {
             </div>
             <button
               onClick={() => setIsCandidateModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#4F46E5] text-white text-xs font-bold hover:bg-[#4338CA] transition-colors cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2368f5] text-white text-xs font-bold hover:bg-[#144cc0] transition-colors cursor-pointer shadow-xs"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>{t.recruiter.candidates.newCandidateBtn}</span>
@@ -477,14 +477,14 @@ export const RecruiterDashboard: React.FC = () => {
               return (
                 <div
                   key={cand.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all"
+                  className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between hover:border-[#2368f5] transition-all"
                 >
                   <div>
                     <div className="flex items-start justify-between">
                       <img
                         src={cand.avatar}
                         alt={cand.name}
-                        className="w-12 h-12 rounded-full object-cover ring-2 ring-indigo-200 shadow-2xs"
+                        className="w-12 h-12 rounded-full object-cover ring-2 ring-blue-200 shadow-2xs"
                       />
                       <button
                         onClick={() => deleteCandidate(cand.id)}
@@ -496,7 +496,7 @@ export const RecruiterDashboard: React.FC = () => {
                     </div>
 
                     <h3 className="font-bold text-sm text-slate-900 mt-3">{cand.name}</h3>
-                    <p className="text-xs text-indigo-700 font-semibold">{cand.roleApplied}</p>
+                    <p className="text-xs text-[#2368f5] font-semibold">{cand.roleApplied}</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">{cand.email}</p>
 
                     <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1">
@@ -506,7 +506,7 @@ export const RecruiterDashboard: React.FC = () => {
                       </div>
                       <div className="flex justify-between">
                         <span>Completed:</span>
-                        <span className="font-bold text-emerald-600">{completed.length}</span>
+                        <span className="font-bold text-[#22a06b]">{completed.length}</span>
                       </div>
                     </div>
                   </div>
@@ -514,7 +514,7 @@ export const RecruiterDashboard: React.FC = () => {
                   <div className="mt-4 pt-3 border-t border-slate-100">
                     <button
                       onClick={() => setIsAssignModalOpen(true)}
-                      className="w-full py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full py-2 bg-blue-50 text-[#2368f5] rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <SendHorizontal className="w-3 h-3" />
                       <span>{t.recruiter.candidates.assignQuizBtn}</span>

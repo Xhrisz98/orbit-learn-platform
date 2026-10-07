@@ -1,41 +1,50 @@
 @import "tailwindcss";
 
 @theme {
-  --color-orbit-primary: #0D8B8B;
-  --color-orbit-primary-light: #15A9A9;
-  --color-orbit-primary-dark: #096363;
-  --color-orbit-accent: #FF6B54;
-  --color-orbit-accent-soft: #FFE4DC;
-  --color-orbit-accent-hover: #FF5A40;
-  --color-orbit-success: #2ECC71;
-  --color-orbit-bg: #F8F6F3;
-  --color-orbit-surface: #FFFFFF;
-  --color-orbit-text: #1A2332;
-  --color-orbit-text-muted: #52697C;
-  --color-orbit-border: #E8E4DF;
-  --color-orbit-divider: #D4CEC6;
+  --color-brand-ink: #10243e;
+  --color-brand-ink-2: #1c3553;
+  --color-brand-blue: #2368f5;
+  --color-brand-blue-dark: #144cc0;
+  --color-brand-cyan: #2bc5d9;
+  --color-brand-bg: #f5f8fc;
+  --color-brand-line: #dfe7f1;
+  --color-brand-muted: #60738a;
+  --color-brand-green: #22a06b;
+}
+
+:root {
+  --ink: #10243e;
+  --ink-2: #1c3553;
+  --blue: #2368f5;
+  --blue-dark: #144cc0;
+  --cyan: #2bc5d9;
+  --bg: #f5f8fc;
+  --line: #dfe7f1;
+  --muted: #60738a;
+  --white: #ffffff;
+  --green: #22a06b;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: var(--color-orbit-bg);
-  color: var(--color-orbit-text);
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: var(--bg);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1ede8;
+  background: #edf2f7;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d4cec6;
-  border-radius: 3px;
+  background: #c5d3e3;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #0D8B8B;
+  background: #2368f5;
 }

@@ -28,11 +28,11 @@ export const Footer: React.FC = () => {
             >
               {t.nav.candidatePortal}
             </button>
-            <span className="flex items-center gap-1 text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="flex items-center gap-1 text-[#60738a]">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#2368f5]" />
               <span>Standardized Scoring Engine</span>
             </span>
-            <span>&copy; 2026 TalentScreen. All rights reserved.</span>
+            <span>&copy; 2026 SkillProof. All rights reserved.</span>
           </div>
         </div>
       </div>

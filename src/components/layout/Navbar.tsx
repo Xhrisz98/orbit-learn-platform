@@ -4,9 +4,8 @@ import {
   Briefcase,
   GraduationCap,
   Languages,
-  CheckCircle2,
+  ShieldCheck,
 } from 'lucide-react';
-
 
 export const Navbar: React.FC = () => {
   const {
@@ -27,13 +26,13 @@ export const Navbar: React.FC = () => {
   const activeCandidate = candidates.find(c => c.id === activeCandidateId) || candidates[0];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] shadow-xs">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#dfe7f1] shadow-xs">
       {/* Top Banner: Demo Mode & Role Switcher */}
-      <div className="bg-[#0F172A] text-xs text-white py-2 px-3 sm:px-6">
+      <div className="bg-[#10243e] text-xs text-white py-2 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
           {/* Active Mode Indicator */}
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-[#22a06b] animate-pulse"></span>
             <span className="text-slate-300 hidden sm:inline">{t.demoModeBadge}:</span>
             <span className="font-semibold text-white tracking-wide uppercase text-[11px] sm:text-xs">
               {t.activeRoleLabel} {activeRole === 'recruiter' ? t.roles.recruiter : t.roles.candidate}
@@ -50,7 +49,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setActiveRole('recruiter')}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   activeRole === 'recruiter'
-                    ? 'bg-[#4F46E5] text-white shadow-xs'
+                    ? 'bg-[#2368f5] text-white shadow-xs'
                     : 'text-slate-300 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -62,7 +61,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setActiveRole('candidate')}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   activeRole === 'candidate'
-                    ? 'bg-[#4F46E5] text-white shadow-xs'
+                    ? 'bg-[#2368f5] text-white shadow-xs'
                     : 'text-slate-300 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -78,7 +77,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setLanguage('en')}
                 className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
                   language === 'en'
-                    ? 'bg-[#EF4444] text-white shadow-xs'
+                    ? 'bg-[#2368f5] text-white shadow-xs'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
@@ -88,7 +87,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setLanguage('es')}
                 className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
                   language === 'es'
-                    ? 'bg-[#EF4444] text-white shadow-xs'
+                    ? 'bg-[#2368f5] text-white shadow-xs'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
@@ -105,15 +104,15 @@ export const Navbar: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#4F46E5] to-[#7C3AED] flex items-center justify-center text-white shadow-xs">
-                <CheckCircle2 className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#2368f5] to-[#2bc5d9] flex items-center justify-center text-white shadow-xs">
+                <ShieldCheck className="w-5 h-5 text-white" />
               </div>
               <div>
-                <span className="font-extrabold text-xl text-[#0F172A] tracking-tight font-sans">
+                <span className="font-extrabold text-xl text-[#10243e] tracking-tight font-sans">
                   {t.brand}
                 </span>
-                <span className="hidden lg:inline-block ml-2 text-[10px] font-semibold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">
-                  Talent Assessment MVP
+                <span className="hidden lg:inline-block ml-2 text-[10px] font-bold bg-[#f5f8fc] text-[#2368f5] px-2 py-0.5 rounded-full border border-[#dfe7f1]">
+                  Skills Verification Platform
                 </span>
               </div>
             </div>
@@ -123,27 +122,27 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center gap-3">
             {activeRole === 'recruiter' ? (
               <div className="flex items-center gap-2 pl-2">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 text-[#4F46E5] flex items-center justify-center font-bold text-xs ring-2 ring-indigo-200">
-                  RH
+                <div className="w-8 h-8 rounded-full bg-blue-50 text-[#2368f5] flex items-center justify-center font-bold text-xs ring-2 ring-blue-100">
+                  SP
                 </div>
                 <div className="text-left text-xs leading-tight hidden sm:block">
-                  <p className="font-bold text-[#0F172A]">Staffing & Talent Lead</p>
-                  <p className="text-slate-500 text-[11px]">Recruiter Admin</p>
+                  <p className="font-bold text-[#10243e]">Hiring Manager & Recruiter</p>
+                  <p className="text-[#60738a] text-[11px]">SkillProof Enterprise</p>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 hidden md:inline">
-                  {language === 'en' ? 'Evaluating:' : 'Evaluando a:'}
+                <span className="text-xs text-[#60738a] hidden md:inline">
+                  {language === 'en' ? 'Testing Candidate:' : 'Candidato en prueba:'}
                 </span>
                 <select
                   value={activeCandidateId}
                   onChange={e => setActiveCandidateId(e.target.value)}
-                  className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="text-xs font-semibold bg-[#f5f8fc] border border-[#dfe7f1] rounded-xl px-2.5 py-1.5 text-[#10243e] focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
                 >
                   {candidates.map(c => (
                     <option key={c.id} value={c.id}>
-                      {c.name} ({c.roleApplied})
+                      {c.name} ({c.roleApplied.split(' ')[0]})
                     </option>
                   ))}
                 </select>
@@ -151,7 +150,7 @@ export const Navbar: React.FC = () => {
                   <img
                     src={activeCandidate.avatar}
                     alt={activeCandidate.name}
-                    className="w-8 h-8 rounded-full object-cover ring-2 ring-indigo-300"
+                    className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-200"
                   />
                 )}
               </div>

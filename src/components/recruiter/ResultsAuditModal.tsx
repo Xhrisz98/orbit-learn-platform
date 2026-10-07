@@ -15,17 +15,24 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
 
   const quiz = quizzes.find(q => q.id === assignment.quizId);
 
+  // Filter only questions that were assigned for this test
+  const questionsToAudit = quiz
+    ? assignment.selectedQuestionIds && assignment.selectedQuestionIds.length > 0
+      ? quiz.questions.filter(q => assignment.selectedQuestionIds!.includes(q.id))
+      : quiz.questions
+    : [];
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-7 border border-slate-200 shadow-2xl my-8 max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-7 border border-[#dfe7f1] shadow-2xl my-8 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-slate-200 shrink-0">
+        <div className="flex items-start justify-between pb-4 border-b border-[#dfe7f1] shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Award className="w-5 h-5 text-indigo-600" />
+            <h2 className="text-lg font-bold text-[#10243e] flex items-center gap-2">
+              <Award className="w-5 h-5 text-[#2368f5]" />
               <span>{t.recruiter.auditModal.title}</span>
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[#60738a] mt-0.5">
               {assignment.candidateName} • {assignment.quizTitle}
             </p>
           </div>
@@ -38,18 +45,18 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
         </div>
 
         {/* Score Banner */}
-        <div className="py-4 px-5 rounded-2xl bg-slate-50 border border-slate-200 mt-4 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="py-4 px-5 rounded-2xl bg-[#f5f8fc] border border-[#dfe7f1] mt-4 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-[#60738a] uppercase tracking-wider">
               {t.common.score}
             </span>
             <div className="flex items-baseline gap-2 mt-0.5">
-              <span className={`text-2xl font-black ${
-                (assignment.score ?? 0) >= 75 ? 'text-emerald-600' : 'text-amber-600'
+              <span className={`text-3xl font-black ${
+                (assignment.score ?? 0) >= 75 ? 'text-[#22a06b]' : 'text-amber-600'
               }`}>
                 {assignment.score}%
               </span>
-              <span className="text-xs text-slate-600">
+              <span className="text-xs text-[#10243e] font-semibold">
                 ({assignment.correctAnswersCount} / {assignment.totalQuestions} {t.common.correct.toLowerCase()})
               </span>
             </div>
@@ -59,13 +66,13 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold ${
                 (assignment.score ?? 0) >= 75
-                  ? 'bg-emerald-100 text-emerald-800'
+                  ? 'bg-emerald-100 text-[#22a06b]'
                   : 'bg-amber-100 text-amber-800'
               }`}
             >
               {(assignment.score ?? 0) >= 75 ? t.common.qualified : t.common.notQualified}
             </span>
-            <p className="text-[10px] text-slate-400 mt-1">
+            <p className="text-[10px] text-[#60738a] mt-1">
               Completed: {assignment.completedAt || 'N/A'}
             </p>
           </div>
@@ -73,14 +80,14 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
 
         {/* Question by Question Breakdown */}
         <div className="overflow-y-auto space-y-4 py-4 pr-1 flex-1">
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-            {t.recruiter.auditModal.breakdownLabel}
+          <h3 className="text-xs font-bold text-[#10243e] uppercase tracking-wider">
+            {t.recruiter.auditModal.breakdownLabel} ({questionsToAudit.length} questions)
           </h3>
 
           {!quiz ? (
-            <p className="text-xs text-slate-500">Quiz details unavailable.</p>
+            <p className="text-xs text-[#60738a]">Quiz details unavailable.</p>
           ) : (
-            quiz.questions.map((q, idx) => {
+            questionsToAudit.map((q, idx) => {
               const userSelectedIds = (assignment.answers && assignment.answers[q.id]) || [];
               const correctIds = q.correctOptionIds;
 
@@ -99,13 +106,13 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-bold text-slate-900">
-                      {idx + 1}. {q.text}
+                    <p className="font-bold text-[#10243e]">
+                      #{idx + 1}. {q.text}
                     </p>
                     <span
                       className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 flex items-center gap-1 ${
                         isCorrect
-                          ? 'bg-emerald-600 text-white'
+                          ? 'bg-[#22a06b] text-white'
                           : 'bg-red-600 text-white'
                       }`}
                     >
@@ -130,7 +137,7 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
                               ? 'bg-amber-100/70 text-amber-900 border border-amber-300'
                               : wasSelected && !isOptionKey
                               ? 'bg-red-100 text-red-900 font-semibold border border-red-300'
-                              : 'bg-white text-slate-600 border border-slate-200'
+                              : 'bg-white text-[#60738a] border border-[#dfe7f1]'
                           }`}
                         >
                           <span>{opt.text}</span>
@@ -145,7 +152,7 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
                   </div>
 
                   {q.explanation && (
-                    <p className="text-[11px] text-slate-500 italic pt-1 border-t border-slate-200/60">
+                    <p className="text-[11px] text-[#60738a] italic pt-1 border-t border-slate-200/60">
                       💡 {q.explanation}
                     </p>
                   )}
@@ -156,10 +163,10 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="pt-3 border-t border-slate-200 shrink-0 text-right">
+        <div className="pt-3 border-t border-[#dfe7f1] shrink-0 text-right">
           <button
             onClick={onClose}
-            className="px-5 py-2 text-xs font-bold bg-slate-900 text-white rounded-xl hover:bg-slate-800 cursor-pointer"
+            className="px-5 py-2 text-xs font-bold bg-[#10243e] text-white rounded-xl hover:bg-[#1c3553] cursor-pointer"
           >
             {t.common.close}
           </button>

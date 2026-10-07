@@ -24,7 +24,8 @@ interface AppContextType {
   assignments: AssessmentAssignment[];
   createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => void;
   createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => void;
-  assignQuiz: (candidateId: string, quizId: string) => void;
+  assignQuiz: (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => void;
+  assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => void;
   submitAssessment: (assignmentId: string, userAnswers: Record<string, string[]>) => SubmitResult;
   deleteQuiz: (quizId: string) => void;
   deleteCandidate: (candidateId: string) => void;
@@ -34,7 +35,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('talent_lang') as Language;
+    const saved = localStorage.getItem('skillproof_lang') as Language;
     return saved === 'es' || saved === 'en' ? saved : 'en'; // English is default
   });
 
@@ -42,17 +43,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeCandidateId, setActiveCandidateId] = useState<string>('cand-4'); // Lucas Vance (has pending test)
 
   const [quizzes, setQuizzes] = useState<Quiz[]>(() => {
-    const saved = localStorage.getItem('talent_quizzes');
+    const saved = localStorage.getItem('skillproof_quizzes');
     return saved ? JSON.parse(saved) : initialQuizzes;
   });
 
   const [candidates, setCandidates] = useState<Candidate[]>(() => {
-    const saved = localStorage.getItem('talent_candidates');
+    const saved = localStorage.getItem('skillproof_candidates');
     return saved ? JSON.parse(saved) : initialCandidates;
   });
 
   const [assignments, setAssignments] = useState<AssessmentAssignment[]>(() => {
-    const saved = localStorage.getItem('talent_assignments');
+    const saved = localStorage.getItem('skillproof_assignments');
     return saved ? JSON.parse(saved) : initialAssignments;
   });
 
@@ -60,19 +61,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('talent_lang', lang);
+    localStorage.setItem('skillproof_lang', lang);
   };
 
   useEffect(() => {
-    localStorage.setItem('talent_quizzes', JSON.stringify(quizzes));
+    localStorage.setItem('skillproof_quizzes', JSON.stringify(quizzes));
   }, [quizzes]);
 
   useEffect(() => {
-    localStorage.setItem('talent_candidates', JSON.stringify(candidates));
+    localStorage.setItem('skillproof_candidates', JSON.stringify(candidates));
   }, [candidates]);
 
   useEffect(() => {
-    localStorage.setItem('talent_assignments', JSON.stringify(assignments));
+    localStorage.setItem('skillproof_assignments', JSON.stringify(assignments));
   }, [assignments]);
 
   const createQuiz = (newQuizData: Omit<Quiz, 'id' | 'createdAt'>) => {
@@ -99,10 +100,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCandidates(prev => [created, ...prev]);
   };
 
-  const assignQuiz = (candidateId: string, quizId: string) => {
+  const assignQuiz = (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => {
     const candidate = candidates.find(c => c.id === candidateId);
     const quiz = quizzes.find(q => q.id === quizId);
     if (!candidate || !quiz) return;
+
+    const chosenIds = selectedQuestionIds && selectedQuestionIds.length > 0
+      ? selectedQuestionIds
+      : quiz.questions.map(q => q.id);
 
     const newAssignment: AssessmentAssignment = {
       id: `assign-${Date.now()}`,
@@ -112,12 +117,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       roleApplied: candidate.roleApplied,
       quizId: quiz.id,
       quizTitle: quiz.title,
+      selectedQuestionIds: chosenIds,
       status: 'pending',
-      totalQuestions: quiz.questions.length,
+      totalQuestions: chosenIds.length,
       assignedAt: new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
     };
 
     setAssignments(prev => [newAssignment, ...prev]);
+  };
+
+  const assignCustomQuiz = (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => {
+    const quiz = quizzes.find(q => q.id === quizId);
+    if (!quiz || candidateIds.length === 0 || selectedQuestionIds.length === 0) return;
+
+    const nowStr = new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+    const newAssignments: AssessmentAssignment[] = candidateIds.map((cId, idx) => {
+      const candidate = candidates.find(c => c.id === cId);
+      return {
+        id: `assign-${Date.now()}-${idx}`,
+        candidateId: cId,
+        candidateName: candidate?.name || 'Candidate',
+        candidateEmail: candidate?.email || 'email@candidate.com',
+        roleApplied: candidate?.roleApplied || 'Applicant',
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        selectedQuestionIds: selectedQuestionIds,
+        status: 'pending',
+        totalQuestions: selectedQuestionIds.length,
+        assignedAt: nowStr,
+      };
+    });
+
+    setAssignments(prev => [...newAssignments, ...prev]);
   };
 
   const submitAssessment = (assignmentId: string, userAnswers: Record<string, string[]>): SubmitResult => {
@@ -131,10 +163,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { score: 0, correctCount: 0, totalQuestions: 0, passed: false };
     }
 
+    // Determine the exact subset of questions to grade based on assignment.selectedQuestionIds
+    const questionsToGrade = assignment.selectedQuestionIds && assignment.selectedQuestionIds.length > 0
+      ? quiz.questions.filter(q => assignment.selectedQuestionIds!.includes(q.id))
+      : quiz.questions;
+
     let correctCount = 0;
 
-    // Check each question in the quiz
-    quiz.questions.forEach(q => {
+    questionsToGrade.forEach(q => {
       const selected = (userAnswers[q.id] || []).slice().sort();
       const expected = q.correctOptionIds.slice().sort();
 
@@ -147,7 +183,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
-    const totalQuestions = quiz.questions.length;
+    const totalQuestions = questionsToGrade.length;
     const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
     const passed = score >= 75;
 
@@ -205,6 +241,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createQuiz,
         createCandidate,
         assignQuiz,
+        assignCustomQuiz,
         submitAssessment,
         deleteQuiz,
         deleteCandidate,
