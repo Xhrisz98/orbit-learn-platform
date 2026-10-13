@@ -3,7 +3,7 @@ import type { Role, Quiz, Candidate, AssessmentAssignment, QuizArea } from '../t
 import { initialQuizzes, initialCandidates, initialAssignments } from '../data/mockData';
 import { translations } from '../i18n/translations';
 import type { Language } from '../i18n/translations';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { quizService } from '../services/quizService';
 import { candidateService } from '../services/candidateService';
 import { assignmentService } from '../services/assignmentService';
@@ -117,6 +117,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     initData();
+  }, []);
+
+  // Supabase Realtime: Sincronización en vivo sin recargar pantalla
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    const channel = supabase
+      .channel('skillproof-realtime-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'assessment_assignments' },
+        async (payload) => {
+          console.log('⚡ [Realtime] Cambio detectado en evaluaciones:', payload.eventType);
+          try {
+            const refreshed = await assignmentService.getAll();
+            setAssignments(refreshed);
+          } catch (err) {
+            console.error('Error refreshing assignments via Realtime:', err);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'candidates' },
+        async () => {
+          try {
+            const refreshed = await candidateService.getAll();
+            setCandidates(refreshed);
+          } catch (err) {
+            console.error('Error refreshing candidates via Realtime:', err);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'quizzes' },
+        async () => {
+          try {
+            const refreshed = await quizService.getAll();
+            setQuizzes(refreshed);
+          } catch (err) {
+            console.error('Error refreshing quizzes via Realtime:', err);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('🟢 [Realtime] Canal conectado en vivo a Supabase');
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
