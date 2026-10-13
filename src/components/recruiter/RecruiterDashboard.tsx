@@ -18,6 +18,7 @@ import {
   Eye,
   Trash2,
   Edit3,
+  Copy,
 } from 'lucide-react';
 
 
@@ -373,14 +374,28 @@ export const RecruiterDashboard: React.FC = () => {
                             <span>{t.recruiter.pipeline.viewAudit}</span>
                           </button>
                         ) : (
-                          <button
-                            onClick={() => {
-                              alert(`Reminder email re-sent to ${item.candidateEmail}`);
-                            }}
-                            className="text-slate-400 hover:text-slate-700 text-[11px] font-semibold cursor-pointer"
-                          >
-                            Send Reminder
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                const link = `${window.location.origin}?code=${item.id}`;
+                                navigator.clipboard.writeText(link);
+                                alert(`¡Enlace copiado al portapapeles!\n\n${link}\n\nEnvíalo a ${item.candidateName} (${item.candidateEmail}) para que rinda su evaluación.`);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 transition-colors cursor-pointer text-xs border border-emerald-200"
+                              title="Copiar enlace de acceso directo para el candidato"
+                            >
+                              <Copy className="w-3 h-3" />
+                              <span>Copiar Link</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                alert(`Recordatorio enviado a ${item.candidateEmail}`);
+                              }}
+                              className="text-slate-400 hover:text-slate-700 text-[11px] font-semibold cursor-pointer"
+                            >
+                              Recordar
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

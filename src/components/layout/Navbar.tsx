@@ -15,9 +15,6 @@ export const Navbar: React.FC = () => {
     t,
     activeRole,
     setActiveRole,
-    activeCandidateId,
-    setActiveCandidateId,
-    candidates,
     assignments,
     isLiveDatabase,
     loading,
@@ -25,8 +22,6 @@ export const Navbar: React.FC = () => {
 
   const completedCount = assignments.filter(a => a.status === 'completed').length;
   const pendingCount = assignments.filter(a => a.status === 'pending').length;
-
-  const activeCandidate = candidates.find(c => c.id === activeCandidateId) || candidates[0];
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#dfe7f1] shadow-xs">
@@ -36,13 +31,14 @@ export const Navbar: React.FC = () => {
           {/* Active Mode Indicator */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="w-2 h-2 rounded-full bg-[#22a06b] animate-pulse"></span>
-            <span className="text-slate-300 hidden sm:inline">{t.demoModeBadge}:</span>
             <span className="font-semibold text-white tracking-wide uppercase text-[11px] sm:text-xs">
-              {t.activeRoleLabel} {activeRole === 'recruiter' ? t.roles.recruiter : t.roles.candidate}
+              {activeRole === 'recruiter' ? 'SkillProof Enterprise • Hiring Portal' : 'SkillProof Candidate Assessment'}
             </span>
-            <span className="hidden md:inline text-slate-400">
-              • {completedCount} {t.common.completed.toLowerCase()} / {pendingCount} {t.common.pending.toLowerCase()}
-            </span>
+            {activeRole === 'recruiter' && (
+              <span className="hidden md:inline text-slate-400">
+                • {completedCount} {t.common.completed.toLowerCase()} / {pendingCount} {t.common.pending.toLowerCase()}
+              </span>
+            )}
             <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-tight border ${
               isLiveDatabase 
                 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
@@ -149,27 +145,9 @@ export const Navbar: React.FC = () => {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#60738a] hidden md:inline">
-                  {language === 'en' ? 'Testing Candidate:' : 'Candidato en prueba:'}
+                <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-blue-50 text-[#2368f5] border border-blue-200 shadow-2xs">
+                  {language === 'en' ? 'Candidate Assessment Portal' : 'Portal de Evaluación de Postulante'}
                 </span>
-                <select
-                  value={activeCandidateId}
-                  onChange={e => setActiveCandidateId(e.target.value)}
-                  className="text-xs font-semibold bg-[#f5f8fc] border border-[#dfe7f1] rounded-xl px-2.5 py-1.5 text-[#10243e] focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-                >
-                  {candidates.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.roleApplied.split(' ')[0]})
-                    </option>
-                  ))}
-                </select>
-                {activeCandidate && (
-                  <img
-                    src={activeCandidate.avatar}
-                    alt={activeCandidate.name}
-                    className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-200"
-                  />
-                )}
               </div>
             )}
           </div>
