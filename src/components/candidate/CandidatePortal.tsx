@@ -7,7 +7,7 @@ import {
   CheckCircle2,
   PlayCircle,
 } from 'lucide-react';
-
+import { getLocalizedArea } from '../../utils/areaLocalization';
 
 export const CandidatePortal: React.FC = () => {
   const {
@@ -17,6 +17,7 @@ export const CandidatePortal: React.FC = () => {
     assignments,
     quizzes,
     t,
+    language,
   } = useApp();
 
   const [activeTestAssignment, setActiveTestAssignment] = useState<AssessmentAssignment | null>(null);
@@ -108,7 +109,7 @@ export const CandidatePortal: React.FC = () => {
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#f5f8fc] text-[#2368f5] border border-[#dfe7f1]">
-                        {quiz?.category || 'Assessment'}
+                        {getLocalizedArea(quiz?.category || 'Assessment', language)}
                       </span>
 
                       {isCompleted ? (
@@ -125,7 +126,7 @@ export const CandidatePortal: React.FC = () => {
                     </div>
 
                     <h3 className="font-bold text-base text-[#10243e]">
-                      {assignment.quizTitle}
+                      {getLocalizedArea(assignment.quizTitle, language)}
                     </h3>
 
                     {quiz?.description && (
@@ -135,9 +136,9 @@ export const CandidatePortal: React.FC = () => {
                     )}
 
                     <div className="mt-3 flex items-center gap-3 text-xs text-[#60738a] font-semibold">
-                      <span>{assignment.totalQuestions} questions</span>
+                      <span>{assignment.totalQuestions} {t.common.questions.toLowerCase()}</span>
                       <span>•</span>
-                      <span>{quiz?.timeLimitMinutes || 20} mins</span>
+                      <span>{quiz?.timeLimitMinutes || 20} {t.recruiter.quizzes.cardTime}</span>
                     </div>
                   </div>
 

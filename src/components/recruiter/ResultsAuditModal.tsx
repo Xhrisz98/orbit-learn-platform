@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import type { AssessmentAssignment } from '../../types';
 import { X, CheckCircle2, XCircle, Award } from 'lucide-react';
+import { getLocalizedArea } from '../../utils/areaLocalization';
 
 interface Props {
   assignment: AssessmentAssignment | null;
@@ -9,7 +10,7 @@ interface Props {
 }
 
 export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
-  const { quizzes, t } = useApp();
+  const { quizzes, t, language } = useApp();
 
   if (!assignment) return null;
 
@@ -33,7 +34,7 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
               <span>{t.recruiter.auditModal.title}</span>
             </h2>
             <p className="text-xs text-[#60738a] mt-0.5">
-              {assignment.candidateName} • {assignment.quizTitle}
+              {assignment.candidateName} • {getLocalizedArea(assignment.quizTitle, language)}
             </p>
           </div>
           <button
@@ -73,7 +74,7 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
               {(assignment.score ?? 0) >= 75 ? t.common.qualified : t.common.notQualified}
             </span>
             <p className="text-[10px] text-[#60738a] mt-1">
-              Completed: {assignment.completedAt || 'N/A'}
+              {t.recruiter.auditModal.completedOn} {assignment.completedAt || 'N/A'}
             </p>
           </div>
         </div>
@@ -81,11 +82,11 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
         {/* Question by Question Breakdown */}
         <div className="overflow-y-auto space-y-4 py-4 pr-1 flex-1">
           <h3 className="text-xs font-bold text-[#10243e] uppercase tracking-wider">
-            {t.recruiter.auditModal.breakdownLabel} ({questionsToAudit.length} questions)
+            {t.recruiter.auditModal.breakdownLabel} ({questionsToAudit.length} {t.recruiter.auditModal.questionsCount})
           </h3>
 
           {!quiz ? (
-            <p className="text-xs text-[#60738a]">Quiz details unavailable.</p>
+            <p className="text-xs text-[#60738a]">{t.recruiter.auditModal.detailsUnavailable}</p>
           ) : (
             questionsToAudit.map((q, idx) => {
               const userSelectedIds = (assignment.answers && assignment.answers[q.id]) || [];
@@ -153,9 +154,9 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
                         >
                           <span>{opt.text}</span>
                           <span className="text-[10px] uppercase font-bold shrink-0 ml-2">
-                            {wasSelected && isOptionKey && '✓ Selected Correct'}
-                            {wasSelected && !isOptionKey && '✗ Selected Wrong'}
-                            {!wasSelected && isOptionKey && 'Expected Key'}
+                            {wasSelected && isOptionKey && t.recruiter.auditModal.selectedCorrect}
+                            {wasSelected && !isOptionKey && t.recruiter.auditModal.selectedWrong}
+                            {!wasSelected && isOptionKey && t.recruiter.auditModal.expectedKey}
                           </span>
                         </div>
                       );

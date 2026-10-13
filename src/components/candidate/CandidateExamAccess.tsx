@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { TakeAssessmentModal } from './TakeAssessmentModal';
 import type { AssessmentAssignment } from '../../types';
+import { getLocalizedArea } from '../../utils/areaLocalization';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -17,7 +18,7 @@ interface Props {
 }
 
 export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
-  const { assignments, quizzes, setActiveRole } = useApp();
+  const { assignments, quizzes, setActiveRole, t, language } = useApp();
 
   const [examCode, setExamCode] = useState('');
   const [candidateEmail, setCandidateEmail] = useState('');
@@ -47,7 +48,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
     const matched = assignments.find(a => a.id.toLowerCase() === code);
 
     if (!matched) {
-      setErrorMessage('No se encontró ninguna evaluación con ese código. Verifica el enlace enviado por el reclutador.');
+      setErrorMessage(t.candidateAccess.screenCode.codeNotFound);
       return;
     }
 
@@ -64,7 +65,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
     const expected = (activeAssignment.candidateEmail || '').trim().toLowerCase();
 
     if (email !== expected) {
-      setErrorMessage(`El correo ingresado no coincide con el destinatario de esta evaluación.`);
+      setErrorMessage(t.candidateAccess.screenEmail.emailMismatch);
       return;
     }
 
@@ -82,10 +83,10 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
           <ShieldCheck className="w-6 h-6" />
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-[#10243e] tracking-tight">
-          SkillProof Candidate Assessment
+          {t.candidateAccess.brandTitle}
         </h1>
         <p className="text-xs sm:text-sm text-[#60738a] mt-1">
-          Plataforma Segura de Evaluación Técnica de Competencias Laborales
+          {t.candidateAccess.brandSubtitle}
         </p>
       </div>
 
@@ -97,20 +98,24 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
               <Lock className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-base text-[#10243e]">Acceso a Evaluación Técnica</h2>
-              <p className="text-xs text-[#60738a]">Ingresa el código que recibiste en tu invitación</p>
+              <h2 className="font-bold text-base text-[#10243e]">
+                {t.candidateAccess.screenCode.headerTitle}
+              </h2>
+              <p className="text-xs text-[#60738a]">
+                {t.candidateAccess.screenCode.headerSubtitle}
+              </p>
             </div>
           </div>
 
           <form onSubmit={handleVerifyCode} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                Código o ID de Examen
+                {t.candidateAccess.screenCode.codeLabel}
               </label>
               <input
                 type="text"
                 required
-                placeholder="Ej. f03408d6-2243-4b6b-af53-a131eb59e697"
+                placeholder={t.candidateAccess.screenCode.codePlaceholder}
                 value={examCode}
                 onChange={e => setExamCode(e.target.value)}
                 className="w-full text-xs font-mono p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2368f5]/20 focus:border-[#2368f5]"
@@ -128,7 +133,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
               type="submit"
               className="w-full py-3 bg-[#2368f5] hover:bg-[#144cc0] text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Buscar Evaluación</span>
+              <span>{t.candidateAccess.screenCode.searchBtn}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -144,7 +149,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
                 className="text-xs text-[#2368f5] hover:underline font-semibold inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <Briefcase className="w-3.5 h-3.5" />
-                <span>¿Eres reclutador? Ir al Portal Administrativo</span>
+                <span>{t.candidateAccess.screenCode.recruiterLink}</span>
               </button>
             </div>
           )}
@@ -157,13 +162,14 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
           <div className="flex items-start justify-between pb-4 border-b border-slate-100">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-[#2368f5] border border-blue-100">
-                Invitación Confirmada
+                {t.candidateAccess.screenEmail.invitationConfirmed}
               </span>
               <h2 className="font-extrabold text-lg sm:text-xl text-[#10243e] mt-2">
-                {activeAssignment.quizTitle}
+                {getLocalizedArea(activeAssignment.quizTitle, language)}
               </h2>
               <p className="text-xs text-[#60738a] mt-0.5">
-                Candidato registrado: <span className="font-bold text-slate-800">{activeAssignment.candidateName}</span>
+                {t.candidateAccess.screenEmail.registeredCandidate}{' '}
+                <span className="font-bold text-slate-800">{activeAssignment.candidateName}</span>
               </p>
             </div>
           </div>
@@ -173,30 +179,41 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
               <div className="w-14 h-14 bg-emerald-100 text-[#22a06b] rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="font-bold text-base text-[#10243e]">Esta prueba ya ha sido completada</h3>
+              <h3 className="font-bold text-base text-[#10243e]">
+                {t.candidateAccess.screenEmail.completedTitle}
+              </h3>
               <p className="text-xs text-[#60738a] max-w-sm mx-auto">
-                Tu evaluación fue finalizada el {activeAssignment.completedAt || 'recientemente'}. Tus respuestas ya se encuentran registradas en la base de datos de contratación.
+                {t.candidateAccess.screenEmail.completedDesc.replace(
+                  '{date}',
+                  activeAssignment.completedAt || t.candidateAccess.screenEmail.recently
+                )}
               </p>
               <div className="pt-4">
                 <span className="text-2xl font-black text-[#10243e]">{activeAssignment.score}%</span>
-                <span className="text-xs text-[#60738a] block mt-1">Calificación obtenida</span>
+                <span className="text-xs text-[#60738a] block mt-1">
+                  {t.candidateAccess.screenEmail.scoreObtained}
+                </span>
               </div>
             </div>
           ) : (
             <form onSubmit={handleVerifyEmail} className="space-y-4">
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-[#60738a] space-y-1">
-                <p className="font-semibold text-slate-800">Verificación de Identidad Antifraude</p>
-                <p>Para ingresar al examen y desbloquear tu cuestionario personalizado, confirma tu correo electrónico registrado.</p>
+                <p className="font-semibold text-slate-800">
+                  {t.candidateAccess.screenEmail.verifyIdentityTitle}
+                </p>
+                <p>
+                  {t.candidateAccess.screenEmail.verifyIdentityDesc}
+                </p>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                  Correo Electrónico del Candidato
+                  {t.candidateAccess.screenEmail.emailLabel}
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="tu.correo@ejemplo.com"
+                  placeholder={t.candidateAccess.screenEmail.emailPlaceholder}
                   value={candidateEmail}
                   onChange={e => setCandidateEmail(e.target.value)}
                   className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2368f5]/20 focus:border-[#2368f5]"
@@ -215,7 +232,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
                 type="submit"
                 className="w-full py-3 bg-[#2368f5] hover:bg-[#144cc0] text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Verificar y Desbloquear Examen</span>
+                <span>{t.candidateAccess.screenEmail.unlockBtn}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
@@ -229,24 +246,29 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
           <div className="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Identidad Verificada
+                {t.candidateAccess.screenLobby.identityVerified}
               </span>
               <h2 className="font-black text-xl text-[#10243e] mt-2">
-                {activeAssignment.quizTitle}
+                {getLocalizedArea(activeAssignment.quizTitle, language)}
               </h2>
               <p className="text-xs text-[#60738a] mt-0.5">
-                Bienvenido, <span className="font-bold text-slate-900">{activeAssignment.candidateName}</span> ({activeAssignment.candidateEmail})
+                {t.candidateAccess.screenLobby.welcome}{' '}
+                <span className="font-bold text-slate-900">{activeAssignment.candidateName}</span> ({activeAssignment.candidateEmail})
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 py-2">
             <div className="p-4 rounded-2xl bg-[#f5f8fc] border border-slate-200 text-center">
-              <span className="text-xs text-[#60738a] block mb-1">Preguntas Asignadas</span>
+              <span className="text-xs text-[#60738a] block mb-1">
+                {t.candidateAccess.screenLobby.assignedQuestions}
+              </span>
               <span className="text-2xl font-black text-[#10243e]">{activeAssignment.totalQuestions}</span>
             </div>
             <div className="p-4 rounded-2xl bg-[#f5f8fc] border border-slate-200 text-center">
-              <span className="text-xs text-[#60738a] block mb-1">Tiempo Límite</span>
+              <span className="text-xs text-[#60738a] block mb-1">
+                {t.candidateAccess.screenLobby.timeLimit}
+              </span>
               <span className="text-2xl font-black text-[#10243e]">{currentQuiz?.timeLimitMinutes || 20} min</span>
             </div>
           </div>
@@ -254,12 +276,12 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1.5 leading-relaxed">
             <p className="font-bold flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-amber-700" />
-              <span>Instrucciones antes de iniciar:</span>
+              <span>{t.candidateAccess.screenLobby.instructionsTitle}</span>
             </p>
             <ul className="list-disc list-inside space-y-1 text-amber-800 pl-1">
-              <li>Lee cuidadosamente cada pregunta antes de marcar tu respuesta.</li>
-              <li>Una vez iniciado, el temporizador comenzará a correr.</li>
-              <li>Al presionar <strong>"Enviar Evaluación"</strong>, tus respuestas se guardarán definitivamente en la base de datos de contratación.</li>
+              <li>{t.candidateAccess.screenLobby.rule1}</li>
+              <li>{t.candidateAccess.screenLobby.rule2}</li>
+              <li>{t.candidateAccess.screenLobby.rule3}</li>
             </ul>
           </div>
 
@@ -267,7 +289,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
             onClick={() => setIsTestModalOpen(true)}
             className="w-full py-3.5 bg-[#2368f5] hover:bg-[#144cc0] text-white text-sm font-bold rounded-2xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Iniciar Evaluación Ahora</span>
+            <span>{t.candidateAccess.screenLobby.startBtn}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

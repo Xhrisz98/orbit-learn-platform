@@ -11,6 +11,8 @@ import {
   BookOpen,
 } from 'lucide-react';
 
+import { getLocalizedArea } from '../../utils/areaLocalization';
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -24,7 +26,7 @@ export const AssignQuizModal: React.FC<Props> = ({
   defaultCandidateId,
   defaultQuizId,
 }) => {
-  const { candidates, quizzes, assignCustomQuiz, t } = useApp();
+  const { candidates, quizzes, assignCustomQuiz, t, language } = useApp();
 
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
   const [selectedQuizId, setSelectedQuizId] = useState<string>('');
@@ -143,10 +145,12 @@ export const AssignQuizModal: React.FC<Props> = ({
               <CheckCircle2 className="w-9 h-9" />
             </div>
             <h3 className="text-xl font-black text-slate-900">
-              Custom Assessment Assigned!
+              {t.recruiter.assignModal.successTitle}
             </h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Assigned {selectedQuestionIds.length} customized questions to {selectedCandidateIds.length} candidate(s). The tests are ready in their portal.
+              {t.recruiter.assignModal.successDesc
+                .replace('{questions}', String(selectedQuestionIds.length))
+                .replace('{candidates}', String(selectedCandidateIds.length))}
             </p>
           </div>
         ) : (
@@ -245,7 +249,7 @@ export const AssignQuizModal: React.FC<Props> = ({
                 >
                   {quizzes.map(q => (
                     <option key={q.id} value={q.id}>
-                      {q.title} ({q.questions.length} questions in bank) • {q.category}
+                      {getLocalizedArea(q.title, language)} ({q.questions.length} {t.recruiter.assignModal.questionsInBank}) • {getLocalizedArea(q.category, language)}
                     </option>
                   ))}
                 </select>
@@ -299,7 +303,7 @@ export const AssignQuizModal: React.FC<Props> = ({
                   {/* Question Checklist */}
                   <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
                     {filteredQuestions.length === 0 ? (
-                      <p className="text-xs text-slate-400 py-4 text-center">No questions match your search.</p>
+                      <p className="text-xs text-slate-400 py-4 text-center">{t.recruiter.assignModal.noQuestionsMatch}</p>
                     ) : (
                       filteredQuestions.map((q, idx) => {
                         const isChecked = selectedQuestionIds.includes(q.id);
@@ -328,11 +332,11 @@ export const AssignQuizModal: React.FC<Props> = ({
                                 </span>
                                 {q.categoryTag && (
                                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-700">
-                                    {q.categoryTag}
+                                    {getLocalizedArea(q.categoryTag, language)}
                                   </span>
                                 )}
                                 <span className="text-[10px] text-slate-400">
-                                  ({q.options.length} options)
+                                  ({q.options.length} {t.recruiter.assignModal.optionsLabel})
                                 </span>
                               </div>
                               <p className="line-clamp-2 leading-relaxed">{q.text}</p>

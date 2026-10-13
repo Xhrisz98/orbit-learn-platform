@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useApp } from '../../context/AppContext';
 import { authService } from '../../services/authService';
 import {
   ShieldCheck,
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate }) => {
+  const { t } = useApp();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +37,11 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
       if (mode === 'signin') {
         const { user, error } = await authService.signIn(email, password);
         if (error) {
-          setErrorMessage(error === 'Invalid login credentials' ? 'Credenciales incorrectas. Verifica tu correo y contraseña.' : error);
+          setErrorMessage(
+            error === 'Invalid login credentials'
+              ? t.adminAuth.errorInvalidCreds
+              : error
+          );
           return;
         }
         if (user) {
@@ -48,7 +54,7 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
           return;
         }
         if (requiresEmailConfirmation) {
-          setInfoMessage('Cuenta creada exitosamente. Se ha enviado un enlace de confirmación a tu correo para activar el acceso.');
+          setInfoMessage(t.adminAuth.successSignUpConfirmation);
           return;
         }
         if (user) {
@@ -56,7 +62,7 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
         }
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Error inesperado al conectar con Supabase.');
+      setErrorMessage(err.message || t.adminAuth.errorUnexpected);
     } finally {
       setLoading(false);
     }
@@ -81,10 +87,10 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
           <ShieldCheck className="w-6 h-6" />
         </div>
         <h1 className="text-2xl font-black text-[#10243e] tracking-tight">
-          SkillProof Enterprise
+          {t.adminAuth.brandTitle}
         </h1>
         <p className="text-xs text-[#60738a] mt-1">
-          Panel Exclusivo de Reclutamiento y Evaluación Técnica
+          {t.adminAuth.brandSubtitle}
         </p>
       </div>
 
@@ -101,7 +107,7 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
               mode === 'signin' ? 'bg-white text-[#10243e] shadow-xs' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            Iniciar Sesión
+            {t.adminAuth.tabSignIn}
           </button>
           <button
             type="button"
@@ -113,7 +119,7 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
               mode === 'signup' ? 'bg-white text-[#10243e] shadow-xs' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            Crear Cuenta
+            {t.adminAuth.tabSignUp}
           </button>
         </div>
 
@@ -121,14 +127,14 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
           {mode === 'signup' && (
             <div>
               <label className="block text-xs font-semibold text-slate-800 mb-1">
-                Nombre y Apellido
+                {t.adminAuth.nameLabel}
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 <input
                   type="text"
                   required
-                  placeholder="Ej. Carlos Mendoza"
+                  placeholder={t.adminAuth.namePlaceholder}
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
                   className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2368f5]/20 focus:border-[#2368f5]"
@@ -139,14 +145,14 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
 
           <div>
             <label className="block text-xs font-semibold text-slate-800 mb-1">
-              Correo Electrónico Corporativo
+              {t.adminAuth.emailLabel}
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               <input
                 type="email"
                 required
-                placeholder="reclutador@empresa.com"
+                placeholder={t.adminAuth.emailPlaceholder}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2368f5]/20 focus:border-[#2368f5]"
@@ -156,7 +162,7 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
 
           <div>
             <label className="block text-xs font-semibold text-slate-800 mb-1">
-              Contraseña
+              {t.adminAuth.passwordLabel}
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -191,7 +197,13 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
             disabled={loading}
             className="w-full py-3 bg-[#2368f5] hover:bg-[#144cc0] disabled:opacity-60 text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>{loading ? 'Conectando...' : mode === 'signin' ? 'Entrar al Panel de Reclutador' : 'Registrar Cuenta'}</span>
+            <span>
+              {loading
+                ? t.adminAuth.connectingBtn
+                : mode === 'signin'
+                ? t.adminAuth.signInBtn
+                : t.adminAuth.signUpBtn}
+            </span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
@@ -203,7 +215,7 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
             onClick={handleQuickDemoAccess}
             className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 transition-colors cursor-pointer"
           >
-            ⚡ Acceso Rápido de Prueba (Demo Admin)
+            {t.adminAuth.quickDemoBtn}
           </button>
         </div>
 
@@ -215,7 +227,7 @@ export const AdminAuthView: React.FC<Props> = ({ onSuccess, onSwitchToCandidate 
             className="text-xs text-[#2368f5] hover:underline font-semibold inline-flex items-center gap-1.5 cursor-pointer"
           >
             <GraduationCap className="w-3.5 h-3.5" />
-            <span>¿Eres candidato o postulante? Ir a tu Evaluación</span>
+            <span>{t.adminAuth.switchToCandidateLink}</span>
           </button>
         </div>
       </div>

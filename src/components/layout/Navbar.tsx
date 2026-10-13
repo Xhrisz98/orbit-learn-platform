@@ -37,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onAdminLogout }) => {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="w-2 h-2 rounded-full bg-[#22a06b] animate-pulse"></span>
             <span className="font-semibold text-white tracking-wide uppercase text-[11px] sm:text-xs">
-              {activeRole === 'recruiter' ? 'SkillProof Enterprise • Hiring Portal' : 'SkillProof Candidate Assessment'}
+              {activeRole === 'recruiter' ? t.nav.enterprisePortal : t.nav.candidateAssessment}
             </span>
             {activeRole === 'recruiter' && (
               <span className="hidden md:inline text-slate-400">
@@ -52,10 +52,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onAdminLogout }) => {
               <Database className="w-3 h-3 shrink-0" />
               <span>
                 {loading 
-                  ? (language === 'es' ? 'Sincronizando...' : 'Syncing Cloud...') 
+                  ? t.nav.syncing 
                   : isLiveDatabase 
-                    ? 'Supabase Cloud' 
-                    : (language === 'es' ? 'Modo Local' : 'Local Storage')}
+                    ? t.nav.cloudMode 
+                    : t.nav.localMode}
               </span>
             </div>
           </div>
@@ -130,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onAdminLogout }) => {
                   {t.brand}
                 </span>
                 <span className="hidden lg:inline-block ml-2 text-[10px] font-bold bg-[#f5f8fc] text-[#2368f5] px-2 py-0.5 rounded-full border border-[#dfe7f1]">
-                  Skills Verification Platform
+                  {t.nav.skillsVerificationPlatform}
                 </span>
               </div>
             </div>
@@ -145,14 +145,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onAdminLogout }) => {
                     SP
                   </div>
                   <div className="text-left text-xs leading-tight hidden sm:block">
-                    <p className="font-bold text-[#10243e]">Hiring Manager & Recruiter</p>
-                    <p className="text-[#60738a] text-[11px]">SkillProof Enterprise</p>
+                    <p className="font-bold text-[#10243e]">{t.nav.hiringManagerRole}</p>
+                    <p className="text-[#60738a] text-[11px]">{t.nav.enterpriseOrg}</p>
                   </div>
                 </div>
                 {onAdminLogout && (
                   <button
                     onClick={onAdminLogout}
-                    title="Cerrar Sesión de Administrador"
+                    title={t.nav.logoutAdminTitle}
                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
@@ -162,7 +162,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onAdminLogout }) => {
             ) : (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-blue-50 text-[#2368f5] border border-blue-200 shadow-2xs">
-                  {language === 'en' ? 'Candidate Assessment Portal' : 'Portal de Evaluación de Postulante'}
+                  {t.candidate.portalBadge}
                 </span>
               </div>
             )}

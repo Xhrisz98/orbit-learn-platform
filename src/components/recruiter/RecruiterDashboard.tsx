@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 
 
+import { getLocalizedArea } from '../../utils/areaLocalization';
+
 export const RecruiterDashboard: React.FC = () => {
   const {
     candidates,
@@ -30,6 +32,7 @@ export const RecruiterDashboard: React.FC = () => {
     deleteQuiz,
     deleteCandidate,
     t,
+    language,
   } = useApp();
 
   // Active view tab
@@ -315,7 +318,9 @@ export const RecruiterDashboard: React.FC = () => {
                       </td>
 
                       <td className="p-4">
-                        <p className="font-medium text-slate-900 max-w-xs truncate">{item.quizTitle}</p>
+                        <p className="font-medium text-slate-900 max-w-xs truncate">
+                          {getLocalizedArea(item.quizTitle, language)}
+                        </p>
                         <p className="text-[11px] text-slate-400">{item.assignedAt}</p>
                       </td>
 
@@ -379,21 +384,25 @@ export const RecruiterDashboard: React.FC = () => {
                               onClick={() => {
                                 const link = `${window.location.origin}?code=${item.id}`;
                                 navigator.clipboard.writeText(link);
-                                alert(`¡Enlace copiado al portapapeles!\n\n${link}\n\nEnvíalo a ${item.candidateName} (${item.candidateEmail}) para que rinda su evaluación.`);
+                                alert(
+                                  t.recruiter.pipeline.linkCopiedAlert
+                                    .replace('{name}', item.candidateName)
+                                    .replace('{email}', item.candidateEmail) + `\n\n${link}`
+                                );
                               }}
                               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 transition-colors cursor-pointer text-xs border border-emerald-200"
-                              title="Copiar enlace de acceso directo para el candidato"
+                              title={t.recruiter.pipeline.copyLinkBtn}
                             >
                               <Copy className="w-3 h-3" />
-                              <span>Copiar Link</span>
+                              <span>{t.recruiter.pipeline.copyLinkBtn}</span>
                             </button>
                             <button
                               onClick={() => {
-                                alert(`Recordatorio enviado a ${item.candidateEmail}`);
+                                alert(t.recruiter.pipeline.reminderSentAlert.replace('{email}', item.candidateEmail));
                               }}
                               className="text-slate-400 hover:text-slate-700 text-[11px] font-semibold cursor-pointer"
                             >
-                              Recordar
+                              {t.recruiter.pipeline.remindBtn}
                             </button>
                           </div>
                         )}
@@ -436,7 +445,7 @@ export const RecruiterDashboard: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-[#2368f5]">
-                      {quiz.category}
+                      {getLocalizedArea(quiz.category, language)}
                     </span>
                     <div className="flex items-center gap-1">
                       <button
@@ -463,7 +472,7 @@ export const RecruiterDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <h3 className="font-bold text-sm text-slate-900">{quiz.title}</h3>
+                  <h3 className="font-bold text-sm text-slate-900">{getLocalizedArea(quiz.title, language)}</h3>
                   <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
                     {quiz.description}
                   </p>
@@ -476,7 +485,7 @@ export const RecruiterDashboard: React.FC = () => {
                 </div>
 
                 <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-slate-400">Created: {quiz.createdAt}</span>
+                  <span className="text-[11px] text-slate-400">{t.recruiter.quizzes.createdLabel} {quiz.createdAt}</span>
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => {
@@ -552,11 +561,11 @@ export const RecruiterDashboard: React.FC = () => {
 
                     <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1">
                       <div className="flex justify-between">
-                        <span>Tests Assigned:</span>
+                        <span>{t.recruiter.candidates.testsAssigned}</span>
                         <span className="font-bold">{candAssignments.length}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Completed:</span>
+                        <span>{t.recruiter.candidates.testsCompleted}</span>
                         <span className="font-bold text-[#22a06b]">{completed.length}</span>
                       </div>
                     </div>
