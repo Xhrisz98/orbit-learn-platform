@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Role, Quiz, Candidate, AssessmentAssignment } from '../types';
+import type { Role, Quiz, Candidate, AssessmentAssignment, QuizArea } from '../types';
 import { initialQuizzes, initialCandidates, initialAssignments } from '../data/mockData';
 import { translations } from '../i18n/translations';
 import type { Language } from '../i18n/translations';
@@ -8,6 +8,7 @@ import { quizService } from '../services/quizService';
 import { candidateService } from '../services/candidateService';
 import { assignmentService } from '../services/assignmentService';
 import { seedService } from '../services/seedService';
+import { areaService, initialDefaultAreas } from '../services/areaService';
 
 interface SubmitResult {
   score: number;
@@ -27,8 +28,10 @@ interface AppContextType {
   quizzes: Quiz[];
   candidates: Candidate[];
   assignments: AssessmentAssignment[];
+  areas: QuizArea[];
   isLiveDatabase: boolean;
   loading: boolean;
+  createArea: (name: string, description?: string) => Promise<QuizArea>;
   createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => Promise<void>;
   updateQuiz: (quizId: string, updatedData: Partial<Quiz>) => Promise<void>;
   createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => Promise<void>;
@@ -67,6 +70,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : initialAssignments;
   });
 
+  const [areas, setAreas] = useState<QuizArea[]>(initialDefaultAreas);
+
   const t = translations[language];
 
   const setLanguage = (lang: Language) => {
@@ -84,10 +89,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Auto-seed if database tables are currently empty
         await seedService.seedIfEmpty();
 
-        const [remoteQuizzes, remoteCandidates, remoteAssignments] = await Promise.all([
+        const [remoteQuizzes, remoteCandidates, remoteAssignments, remoteAreas] = await Promise.all([
           quizService.getAll(),
           candidateService.getAll(),
           assignmentService.getAll(),
+          areaService.getAll(),
         ]);
 
         if (remoteQuizzes && remoteQuizzes.length > 0) {
@@ -98,6 +104,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setActiveCandidateId(prev =>
             remoteCandidates.some(c => c.id === prev) ? prev : remoteCandidates[0].id
           );
+        }
+        if (remoteAreas && remoteAreas.length > 0) {
+          setAreas(remoteAreas);
         }
         setAssignments(remoteAssignments || []);
       } catch (err) {
@@ -345,6 +354,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const createArea = async (name: string, description: string = ''): Promise<QuizArea> => {
+    if (isSupabaseConfigured) {
+      try {
+        const created = await areaService.create(name, description);
+        setAreas(prev => [...prev.filter(a => a.id !== created.id), created]);
+        return created;
+      } catch (err) {
+        console.error('Error creating area on Supabase:', err);
+      }
+    }
+    const created: QuizArea = {
+      id: `area-${Date.now()}`,
+      name: name.trim(),
+      description: description.trim(),
+    };
+    setAreas(prev => [...prev, created]);
+    return created;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -358,8 +386,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         quizzes,
         candidates,
         assignments,
+        areas,
         isLiveDatabase,
         loading,
+        createArea,
         createQuiz,
         updateQuiz,
         createCandidate,
