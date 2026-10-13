@@ -86,14 +86,21 @@ export const quizService = {
     if (updatedData.questions !== undefined) {
       await supabase.from('questions').delete().eq('quiz_id', quizId);
 
-      const questionsToInsert = updatedData.questions.map(q => ({
-        quiz_id: quizId,
-        text: q.text,
-        category_tag: q.categoryTag || '',
-        explanation: q.explanation || '',
-        options: q.options,
-        correct_option_ids: q.correctOptionIds,
-      }));
+      const questionsToInsert = updatedData.questions.map(q => {
+        const item: any = {
+          quiz_id: quizId,
+          text: q.text,
+          category_tag: q.categoryTag || '',
+          explanation: q.explanation || '',
+          options: q.options,
+          correct_option_ids: q.correctOptionIds,
+        };
+        // Preservar el UUID existente si es válido para mantener integridad con selected_question_ids
+        if (q.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q.id)) {
+          item.id = q.id;
+        }
+        return item;
+      });
 
       if (questionsToInsert.length > 0) {
         const { error: questError } = await supabase
