@@ -12,6 +12,14 @@ export interface Question {
   categoryTag?: string;
 }
 
+export interface QuizArea {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  createdAt?: string;
+}
+
 export interface Quiz {
   id: string;
   title: string;

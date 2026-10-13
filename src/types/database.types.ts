@@ -1,3 +1,11 @@
+export interface DatabaseQuizArea {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  created_at: string;
+}
+
 export interface DatabaseQuiz {
   id: string;
   title: string;
