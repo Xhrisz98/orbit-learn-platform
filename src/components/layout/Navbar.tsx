@@ -6,9 +6,14 @@ import {
   Languages,
   ShieldCheck,
   Database,
+  LogOut,
 } from 'lucide-react';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  onAdminLogout?: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ onAdminLogout }) => {
   const {
     language,
     setLanguage,
@@ -134,14 +139,25 @@ export const Navbar: React.FC = () => {
           {/* Role specific profile indicator */}
           <div className="flex items-center gap-3">
             {activeRole === 'recruiter' ? (
-              <div className="flex items-center gap-2 pl-2">
-                <div className="w-8 h-8 rounded-full bg-blue-50 text-[#2368f5] flex items-center justify-center font-bold text-xs ring-2 ring-blue-100">
-                  SP
+              <div className="flex items-center gap-3 pl-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-50 text-[#2368f5] flex items-center justify-center font-bold text-xs ring-2 ring-blue-100">
+                    SP
+                  </div>
+                  <div className="text-left text-xs leading-tight hidden sm:block">
+                    <p className="font-bold text-[#10243e]">Hiring Manager & Recruiter</p>
+                    <p className="text-[#60738a] text-[11px]">SkillProof Enterprise</p>
+                  </div>
                 </div>
-                <div className="text-left text-xs leading-tight hidden sm:block">
-                  <p className="font-bold text-[#10243e]">Hiring Manager & Recruiter</p>
-                  <p className="text-[#60738a] text-[11px]">SkillProof Enterprise</p>
-                </div>
+                {onAdminLogout && (
+                  <button
+                    onClick={onAdminLogout}
+                    title="Cerrar Sesión de Administrador"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">
