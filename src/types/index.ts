@@ -10,6 +10,7 @@ export interface Question {
   correctOptionIds: string[]; // Supports single or multiple correct answers
   explanation?: string;
   categoryTag?: string;
+  imageUrl?: string;
 }
 
 export interface QuizArea {

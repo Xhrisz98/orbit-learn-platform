@@ -182,8 +182,18 @@ export const TakeAssessmentModal: React.FC<Props> = ({ assignment, onClose }) =>
                   {isMultipleChoice ? t.candidate.assessmentModal.multipleHint : t.candidate.assessmentModal.singleHint}
                 </p>
                 <h3 className="text-sm sm:text-base font-bold text-[#10243e] leading-snug">
-                  {currentQ.text}
+                  {currentQ.text.replace(/!\[.*?\]\((.*?)\)/g, '').trim()}
                 </h3>
+
+                {(currentQ.imageUrl || currentQ.text.match(/!\[.*?\]\((.*?)\)/)?.[1]) && (
+                  <div className="mt-3 p-2 bg-slate-50 border border-slate-200 rounded-2xl flex justify-center max-h-64 overflow-hidden">
+                    <img
+                      src={currentQ.imageUrl || currentQ.text.match(/!\[.*?\]\((.*?)\)/)?.[1]}
+                      alt="Technical Drawing"
+                      className="max-h-60 object-contain rounded-xl"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Options */}

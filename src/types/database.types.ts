@@ -23,6 +23,7 @@ export interface DatabaseQuestion {
   explanation: string;
   options: { id: string; text: string }[];
   correct_option_ids: string[];
+  image_url?: string;
   created_at: string;
 }
 

@@ -106,9 +106,20 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-bold text-[#10243e]">
-                      #{idx + 1}. {q.text}
-                    </p>
+                    <div>
+                      <p className="font-bold text-[#10243e]">
+                        #{idx + 1}. {q.text.replace(/!\[.*?\]\((.*?)\)/g, '').trim()}
+                      </p>
+                      {(q.imageUrl || q.text.match(/!\[.*?\]\((.*?)\)/)?.[1]) && (
+                        <div className="mt-2 p-1.5 bg-white border border-slate-200 rounded-xl inline-block max-h-40 overflow-hidden">
+                          <img
+                            src={q.imageUrl || q.text.match(/!\[.*?\]\((.*?)\)/)?.[1]}
+                            alt="Diagram"
+                            className="max-h-36 object-contain rounded-lg"
+                          />
+                        </div>
+                      )}
+                    </div>
                     <span
                       className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 flex items-center gap-1 ${
                         isCorrect
