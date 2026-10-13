@@ -5,6 +5,7 @@ import {
   GraduationCap,
   Languages,
   ShieldCheck,
+  Database,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -18,6 +19,8 @@ export const Navbar: React.FC = () => {
     setActiveCandidateId,
     candidates,
     assignments,
+    isLiveDatabase,
+    loading,
   } = useApp();
 
   const completedCount = assignments.filter(a => a.status === 'completed').length;
@@ -31,7 +34,7 @@ export const Navbar: React.FC = () => {
       <div className="bg-[#10243e] text-xs text-white py-2 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
           {/* Active Mode Indicator */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="w-2 h-2 rounded-full bg-[#22a06b] animate-pulse"></span>
             <span className="text-slate-300 hidden sm:inline">{t.demoModeBadge}:</span>
             <span className="font-semibold text-white tracking-wide uppercase text-[11px] sm:text-xs">
@@ -40,6 +43,20 @@ export const Navbar: React.FC = () => {
             <span className="hidden md:inline text-slate-400">
               • {completedCount} {t.common.completed.toLowerCase()} / {pendingCount} {t.common.pending.toLowerCase()}
             </span>
+            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-tight border ${
+              isLiveDatabase 
+                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
+                : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+            }`}>
+              <Database className="w-3 h-3 shrink-0" />
+              <span>
+                {loading 
+                  ? (language === 'es' ? 'Sincronizando...' : 'Syncing Cloud...') 
+                  : isLiveDatabase 
+                    ? 'Supabase Cloud' 
+                    : (language === 'es' ? 'Modo Local' : 'Local Storage')}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">

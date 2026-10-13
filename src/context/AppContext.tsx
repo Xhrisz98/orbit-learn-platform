@@ -3,6 +3,11 @@ import type { Role, Quiz, Candidate, AssessmentAssignment } from '../types';
 import { initialQuizzes, initialCandidates, initialAssignments } from '../data/mockData';
 import { translations } from '../i18n/translations';
 import type { Language } from '../i18n/translations';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { quizService } from '../services/quizService';
+import { candidateService } from '../services/candidateService';
+import { assignmentService } from '../services/assignmentService';
+import { seedService } from '../services/seedService';
 
 interface SubmitResult {
   score: number;
@@ -22,14 +27,16 @@ interface AppContextType {
   quizzes: Quiz[];
   candidates: Candidate[];
   assignments: AssessmentAssignment[];
-  createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => void;
-  updateQuiz: (quizId: string, updatedData: Partial<Quiz>) => void;
-  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => void;
+  isLiveDatabase: boolean;
+  loading: boolean;
+  createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => Promise<void>;
+  updateQuiz: (quizId: string, updatedData: Partial<Quiz>) => Promise<void>;
+  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => Promise<void>;
   assignQuiz: (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => void;
-  assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => void;
+  assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => Promise<void>;
   submitAssessment: (assignmentId: string, userAnswers: Record<string, string[]>) => SubmitResult;
-  deleteQuiz: (quizId: string) => void;
-  deleteCandidate: (candidateId: string) => void;
+  deleteQuiz: (quizId: string) => Promise<void>;
+  deleteCandidate: (candidateId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -41,7 +48,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [activeRole, setActiveRole] = useState<Role>('recruiter');
-  const [activeCandidateId, setActiveCandidateId] = useState<string>('cand-4'); // Lucas Vance (has pending test)
+  const [activeCandidateId, setActiveCandidateId] = useState<string>('cand-4');
+  const [loading, setLoading] = useState<boolean>(isSupabaseConfigured);
+  const isLiveDatabase = isSupabaseConfigured;
 
   const [quizzes, setQuizzes] = useState<Quiz[]>(() => {
     const saved = localStorage.getItem('skillproof_quizzes');
@@ -65,6 +74,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('skillproof_lang', lang);
   };
 
+  // Sync state with Supabase cloud on mount
+  useEffect(() => {
+    async function initData() {
+      if (!isSupabaseConfigured) return;
+
+      try {
+        setLoading(true);
+        // Auto-seed if database tables are currently empty
+        await seedService.seedIfEmpty();
+
+        const [remoteQuizzes, remoteCandidates, remoteAssignments] = await Promise.all([
+          quizService.getAll(),
+          candidateService.getAll(),
+          assignmentService.getAll(),
+        ]);
+
+        if (remoteQuizzes && remoteQuizzes.length > 0) {
+          setQuizzes(remoteQuizzes);
+        }
+        if (remoteCandidates && remoteCandidates.length > 0) {
+          setCandidates(remoteCandidates);
+          setActiveCandidateId(prev =>
+            remoteCandidates.some(c => c.id === prev) ? prev : remoteCandidates[0].id
+          );
+        }
+        setAssignments(remoteAssignments || []);
+      } catch (err) {
+        console.error('Failed to sync data with Supabase:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    initData();
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('skillproof_quizzes', JSON.stringify(quizzes));
   }, [quizzes]);
@@ -77,7 +122,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('skillproof_assignments', JSON.stringify(assignments));
   }, [assignments]);
 
-  const createQuiz = (newQuizData: Omit<Quiz, 'id' | 'createdAt'>) => {
+  const createQuiz = async (newQuizData: Omit<Quiz, 'id' | 'createdAt'>) => {
+    if (isSupabaseConfigured) {
+      try {
+        const created = await quizService.create(newQuizData);
+        setQuizzes(prev => [created, ...prev]);
+        return;
+      } catch (err) {
+        console.error('Error creating quiz on Supabase:', err);
+      }
+    }
     const created: Quiz = {
       ...newQuizData,
       id: `quiz-${Date.now()}`,
@@ -86,7 +140,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setQuizzes(prev => [created, ...prev]);
   };
 
-  const createCandidate = (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => {
+  const updateQuiz = async (quizId: string, updatedData: Partial<Quiz>) => {
+    if (isSupabaseConfigured) {
+      try {
+        await quizService.update(quizId, updatedData);
+        const refreshed = await quizService.getAll();
+        setQuizzes(refreshed);
+        return;
+      } catch (err) {
+        console.error('Error updating quiz on Supabase:', err);
+      }
+    }
+    setQuizzes(prev =>
+      prev.map(q => (q.id === quizId ? { ...q, ...updatedData } : q))
+    );
+    if (updatedData.title) {
+      setAssignments(prev =>
+        prev.map(a => (a.quizId === quizId ? { ...a, quizTitle: updatedData.title! } : a))
+      );
+    }
+  };
+
+  const deleteQuiz = async (quizId: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        await quizService.delete(quizId);
+      } catch (err) {
+        console.error('Error deleting quiz on Supabase:', err);
+      }
+    }
+    setQuizzes(prev => prev.filter(q => q.id !== quizId));
+    setAssignments(prev => prev.filter(a => a.quizId !== quizId));
+  };
+
+  const createCandidate = async (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => {
+    if (isSupabaseConfigured) {
+      try {
+        const created = await candidateService.create(newCandData);
+        setCandidates(prev => [created, ...prev]);
+        return;
+      } catch (err) {
+        console.error('Error creating candidate on Supabase:', err);
+      }
+    }
     const avatars = [
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
@@ -99,6 +195,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       registeredAt: new Date().toISOString().split('T')[0],
     };
     setCandidates(prev => [created, ...prev]);
+  };
+
+  const deleteCandidate = async (candidateId: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        await candidateService.delete(candidateId);
+      } catch (err) {
+        console.error('Error deleting candidate on Supabase:', err);
+      }
+    }
+    setCandidates(prev => prev.filter(c => c.id !== candidateId));
+    setAssignments(prev => prev.filter(a => a.candidateId !== candidateId));
   };
 
   const assignQuiz = (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => {
@@ -127,7 +235,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAssignments(prev => [newAssignment, ...prev]);
   };
 
-  const assignCustomQuiz = (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => {
+  const assignCustomQuiz = async (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => {
+    if (isSupabaseConfigured) {
+      try {
+        await assignmentService.assignCustom(candidateIds, quizId, selectedQuestionIds);
+        const refreshed = await assignmentService.getAll();
+        setAssignments(refreshed);
+        return;
+      } catch (err) {
+        console.error('Error assigning custom quiz on Supabase:', err);
+      }
+    }
+
     const quiz = quizzes.find(q => q.id === quizId);
     if (!quiz || candidateIds.length === 0 || selectedQuestionIds.length === 0) return;
 
@@ -164,7 +283,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { score: 0, correctCount: 0, totalQuestions: 0, passed: false };
     }
 
-    // Determine the exact subset of questions to grade based on assignment.selectedQuestionIds
     const questionsToGrade = assignment.selectedQuestionIds && assignment.selectedQuestionIds.length > 0
       ? quiz.questions.filter(q => assignment.selectedQuestionIds!.includes(q.id))
       : quiz.questions;
@@ -189,6 +307,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const passed = score >= 75;
 
     const completedAt = new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+    if (isSupabaseConfigured) {
+      assignmentService.submitAssessment(
+        assignmentId,
+        userAnswers,
+        score,
+        correctCount,
+        totalQuestions,
+        passed
+      ).catch(err => console.error('Error submitting assessment to Supabase:', err));
+    }
 
     setAssignments(prev =>
       prev.map(a => {
@@ -216,27 +345,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  const updateQuiz = (quizId: string, updatedData: Partial<Quiz>) => {
-    setQuizzes(prev =>
-      prev.map(q => (q.id === quizId ? { ...q, ...updatedData } : q))
-    );
-    if (updatedData.title) {
-      setAssignments(prev =>
-        prev.map(a => (a.quizId === quizId ? { ...a, quizTitle: updatedData.title! } : a))
-      );
-    }
-  };
-
-  const deleteQuiz = (quizId: string) => {
-    setQuizzes(prev => prev.filter(q => q.id !== quizId));
-    setAssignments(prev => prev.filter(a => a.quizId !== quizId));
-  };
-
-  const deleteCandidate = (candidateId: string) => {
-    setCandidates(prev => prev.filter(c => c.id !== candidateId));
-    setAssignments(prev => prev.filter(a => a.candidateId !== candidateId));
-  };
-
   return (
     <AppContext.Provider
       value={{
@@ -250,6 +358,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         quizzes,
         candidates,
         assignments,
+        isLiveDatabase,
+        loading,
         createQuiz,
         updateQuiz,
         createCandidate,
