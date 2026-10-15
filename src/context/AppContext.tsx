@@ -34,7 +34,7 @@ interface AppContextType {
   createArea: (name: string, description?: string) => Promise<QuizArea>;
   createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => Promise<void>;
   updateQuiz: (quizId: string, updatedData: Partial<Quiz>) => Promise<void>;
-  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female' }) => Promise<void>;
+  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string }) => Promise<void>;
   assignQuiz: (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => void;
   assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => Promise<void>;
   submitAssessment: (assignmentId: string, userAnswers: Record<string, string[]>) => SubmitResult;
@@ -239,7 +239,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAssignments(prev => prev.filter(a => a.quizId !== quizId));
   };
 
-  const createCandidate = async (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female' }) => {
+  const createCandidate = async (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string }) => {
     if (isSupabaseConfigured) {
       try {
         const created = await candidateService.create(newCandData);
@@ -252,8 +252,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const created: Candidate = {
       ...newCandData,
       id: `cand-${Date.now()}`,
-      avatar: `gender:${newCandData.gender || 'male'}`,
+      avatar: `gender:${newCandData.gender || 'male'}${newCandData.area ? `|area:${newCandData.area}` : ''}`,
       gender: newCandData.gender || 'male',
+      area: newCandData.area,
       registeredAt: new Date().toISOString().split('T')[0],
     };
     setCandidates(prev => [created, ...prev]);

@@ -9,12 +9,14 @@ import {
   Search,
   Users,
   BookOpen,
-  User,
   Briefcase,
   Check,
+  Mars,
+  Venus,
 } from 'lucide-react';
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
+import { resolveCandidateGender, getCandidateInitials } from '../../utils/genderHelper';
 
 interface Props {
   isOpen: boolean;
@@ -224,27 +226,36 @@ export const AssignQuizModal: React.FC<Props> = ({
                         ) : (
                           <Square className="w-4 h-4 text-slate-300 shrink-0" />
                         )}
-                        <div
-                          className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border ${
-                            cand.gender === 'female'
-                              ? 'bg-purple-50 border-purple-200 text-purple-600'
-                              : 'bg-blue-50 border-blue-200 text-blue-600'
-                          }`}
-                          title={
-                            cand.gender === 'female'
-                              ? language === 'es'
-                                ? 'Mujer'
-                                : 'Female'
-                              : language === 'es'
-                              ? 'Hombre'
-                              : 'Male'
-                          }
-                        >
-                          <User className="w-3.5 h-3.5" />
+                        <div className="relative shrink-0">
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs border ${
+                              cand.gender === 'female' || resolveCandidateGender(cand) === 'female'
+                                ? 'bg-purple-50 border-purple-200 text-purple-700'
+                                : 'bg-blue-50 border-blue-200 text-blue-700'
+                            }`}
+                          >
+                            <span>{getCandidateInitials(cand.name)}</span>
+                          </div>
+                          <div
+                            className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center border shadow-2xs ${
+                              cand.gender === 'female' || resolveCandidateGender(cand) === 'female'
+                                ? 'bg-purple-100 text-purple-700 border-purple-300'
+                                : 'bg-blue-100 text-blue-700 border-blue-300'
+                            }`}
+                          >
+                            {cand.gender === 'female' || resolveCandidateGender(cand) === 'female' ? (
+                              <Venus className="w-2.5 h-2.5" />
+                            ) : (
+                              <Mars className="w-2.5 h-2.5" />
+                            )}
+                          </div>
                         </div>
                         <div className="truncate">
-                          <p className="truncate">{cand.name}</p>
-                          <p className="text-[10px] text-slate-400 truncate">{cand.roleApplied}</p>
+                          <p className="truncate font-semibold">{cand.name}</p>
+                          <p className="text-[10px] text-slate-400 truncate">
+                            {cand.roleApplied}
+                            {cand.area ? ` • ${getLocalizedArea(cand.area, language)}` : ''}
+                          </p>
                         </div>
                       </div>
                     );

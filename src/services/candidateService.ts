@@ -13,21 +13,34 @@ export const candidateService = {
       throw error;
     }
 
-    return (data || []).map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      email: c.email,
-      roleApplied: c.role_applied,
-      avatar: c.avatar || 'gender:male',
-      gender: c.avatar?.startsWith('gender:')
-        ? (c.avatar.replace('gender:', '') as 'male' | 'female')
-        : undefined,
-      registeredAt: c.registered_at ? c.registered_at.split('T')[0] : '',
-    }));
+    return (data || []).map((c: any) => {
+      let gender: 'male' | 'female' = 'male';
+      let area = c.area || '';
+
+      if (c.avatar?.startsWith('gender:')) {
+        const raw = c.avatar.replace('gender:', '');
+        const [gPart, aPart] = raw.split('|');
+        if (gPart === 'female' || gPart === 'male') gender = gPart;
+        if (aPart?.startsWith('area:')) {
+          area = aPart.replace('area:', '');
+        }
+      }
+
+      return {
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        roleApplied: c.role_applied,
+        area: area || undefined,
+        avatar: c.avatar || 'gender:male',
+        gender,
+        registeredAt: c.registered_at ? c.registered_at.split('T')[0] : '',
+      };
+    });
   },
 
-  async create(candidateData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female' }): Promise<Candidate> {
-    const avatar = `gender:${candidateData.gender || 'male'}`;
+  async create(candidateData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string }): Promise<Candidate> {
+    const avatar = `gender:${candidateData.gender || 'male'}${candidateData.area ? `|area:${candidateData.area}` : ''}`;
 
     const { data, error } = await supabase
       .from('candidates')
@@ -47,6 +60,7 @@ export const candidateService = {
       name: data.name,
       email: data.email,
       roleApplied: data.role_applied,
+      area: candidateData.area,
       avatar: data.avatar,
       gender: candidateData.gender || 'male',
       registeredAt: data.registered_at ? data.registered_at.split('T')[0] : '',

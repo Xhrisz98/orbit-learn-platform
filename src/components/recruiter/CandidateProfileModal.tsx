@@ -11,7 +11,8 @@ import {
   Clock,
   Eye,
   SendHorizontal,
-  User,
+  Mars,
+  Venus,
 } from 'lucide-react';
 
 interface Props {
@@ -49,32 +50,46 @@ export const CandidateProfileModal: React.FC<Props> = ({
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-4">
-            {/* Non-image Gender Avatar */}
-            <div
-              className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-black text-xl shadow-xs border shrink-0 ${
-                isFemale
-                  ? 'bg-purple-50 text-purple-700 border-purple-200'
-                  : 'bg-blue-50 text-blue-700 border-blue-200'
-              }`}
-            >
-              <span>{initials}</span>
-              <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5">
-                {isFemale ? (isEs ? 'Mujer' : 'Female') : (isEs ? 'Hombre' : 'Male')}
-              </span>
+            {/* Non-image Gender Avatar with single initial and vector symbol */}
+            <div className="relative shrink-0">
+              <div
+                className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-xs border ${
+                  isFemale
+                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                    : 'bg-blue-50 text-blue-700 border-blue-200'
+                }`}
+              >
+                <span>{initials}</span>
+              </div>
+              <div
+                className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border shadow-xs ${
+                  isFemale
+                    ? 'bg-purple-100 text-purple-700 border-purple-300'
+                    : 'bg-blue-100 text-blue-700 border-blue-300'
+                }`}
+                title={isFemale ? (isEs ? 'Femenino' : 'Female') : (isEs ? 'Masculino' : 'Male')}
+              >
+                {isFemale ? <Venus className="w-3.5 h-3.5" /> : <Mars className="w-3.5 h-3.5" />}
+              </div>
             </div>
 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center gap-1 ${
+                  className={`w-6 h-6 rounded-full border inline-flex items-center justify-center shadow-2xs ${
                     isFemale
-                      ? 'bg-purple-100/60 text-purple-800 border-purple-200'
-                      : 'bg-blue-100/60 text-blue-800 border-blue-200'
+                      ? 'bg-purple-50 text-purple-700 border-purple-200'
+                      : 'bg-blue-50 text-blue-700 border-blue-200'
                   }`}
+                  title={isFemale ? (isEs ? 'Femenino' : 'Female') : (isEs ? 'Masculino' : 'Male')}
                 >
-                  <User className="w-3 h-3" />
-                  <span>{isFemale ? (isEs ? 'Candidata Mujer' : 'Female Candidate') : (isEs ? 'Candidato Hombre' : 'Male Candidate')}</span>
+                  {isFemale ? <Venus className="w-3.5 h-3.5" /> : <Mars className="w-3.5 h-3.5" />}
                 </span>
+                {candidate.area && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                    {getLocalizedArea(candidate.area, language)}
+                  </span>
+                )}
                 <span className="text-xs text-slate-400 font-mono">ID: {candidate.id.substring(0, 8)}...</span>
               </div>
 

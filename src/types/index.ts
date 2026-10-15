@@ -38,6 +38,7 @@ export interface Candidate {
   name: string;
   email: string;
   roleApplied: string;
+  area?: string;
   avatar: string;
   gender?: 'male' | 'female';
   registeredAt: string;
