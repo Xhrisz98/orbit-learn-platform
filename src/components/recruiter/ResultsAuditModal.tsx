@@ -1,8 +1,9 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import type { AssessmentAssignment } from '../../types';
-import { X, CheckCircle2, XCircle, Award } from 'lucide-react';
+import { X, CheckCircle2, XCircle, Award, FileDown } from 'lucide-react';
 import { getLocalizedArea } from '../../utils/areaLocalization';
+import { exportScorecardToPdf } from '../../utils/pdfExport';
 
 interface Props {
   assignment: AssessmentAssignment | null;
@@ -23,6 +24,10 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
       : quiz.questions
     : [];
 
+  const handleExportPdf = () => {
+    exportScorecardToPdf(assignment, quiz, language);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-7 border border-[#dfe7f1] shadow-2xl my-8 max-h-[90vh] flex flex-col">
@@ -37,12 +42,23 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
               {assignment.candidateName} • {getLocalizedArea(assignment.quizTitle, language)}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportPdf}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-[#2368f5] hover:bg-blue-100 text-xs font-bold cursor-pointer transition-colors border border-blue-200"
+              title={t.recruiter.auditModal.exportPdfBtn}
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t.recruiter.auditModal.exportPdfBtn}</span>
+              <span className="sm:hidden">PDF</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Score Banner */}
@@ -89,13 +105,13 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
             <p className="text-xs text-[#60738a]">{t.recruiter.auditModal.detailsUnavailable}</p>
           ) : (
             questionsToAudit.map((q, idx) => {
-              const userSelectedIds = (assignment.answers && assignment.answers[q.id]) || [];
+              const userSelectedIds: string[] = (assignment.answers && assignment.answers[q.id]) || [];
               const correctIds = q.correctOptionIds;
 
               // Check if user answer is an exact match
               const isCorrect =
                 userSelectedIds.length === correctIds.length &&
-                userSelectedIds.slice().sort().every((val, index) => val === correctIds.slice().sort()[index]);
+                userSelectedIds.slice().sort().every((val: string, index: number) => val === correctIds.slice().sort()[index]);
 
               return (
                 <div
@@ -175,10 +191,17 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="pt-3 border-t border-[#dfe7f1] shrink-0 text-right">
+        <div className="pt-3 border-t border-[#dfe7f1] shrink-0 flex items-center justify-between gap-2">
+          <button
+            onClick={handleExportPdf}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] transition-colors shadow-xs cursor-pointer"
+          >
+            <FileDown className="w-4 h-4" />
+            <span>{t.recruiter.auditModal.exportPdfBtn}</span>
+          </button>
           <button
             onClick={onClose}
-            className="px-5 py-2 text-xs font-bold bg-[#10243e] text-white rounded-xl hover:bg-[#1c3553] cursor-pointer"
+            className="px-5 py-2 text-xs font-bold bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 cursor-pointer"
           >
             {t.common.close}
           </button>

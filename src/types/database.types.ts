@@ -46,7 +46,7 @@ export interface DatabaseAssignment {
   total_questions: number;
   correct_answers_count: number;
   passed_threshold: boolean;
-  answers: Record<string, string[]>;
+  answers: Record<string, any>;
   assigned_at: string;
   completed_at: string | null;
 }

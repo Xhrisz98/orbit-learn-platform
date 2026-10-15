@@ -34,10 +34,11 @@ interface AppContextType {
   createArea: (name: string, description?: string) => Promise<QuizArea>;
   createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => Promise<void>;
   updateQuiz: (quizId: string, updatedData: Partial<Quiz>) => Promise<void>;
-  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => Promise<void>;
+  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female' }) => Promise<void>;
   assignQuiz: (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => void;
   assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => Promise<void>;
   submitAssessment: (assignmentId: string, userAnswers: Record<string, string[]>) => SubmitResult;
+  updateAssignmentReviewStatus: (assignmentId: string, reviewStatus: 'stand_by' | 'approved' | 'rejected') => Promise<void>;
   deleteQuiz: (quizId: string) => Promise<void>;
   deleteCandidate: (candidateId: string) => Promise<void>;
 }
@@ -236,7 +237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAssignments(prev => prev.filter(a => a.quizId !== quizId));
   };
 
-  const createCandidate = async (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>) => {
+  const createCandidate = async (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female' }) => {
     if (isSupabaseConfigured) {
       try {
         const created = await candidateService.create(newCandData);
@@ -246,15 +247,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.error('Error creating candidate on Supabase:', err);
       }
     }
-    const avatars = [
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
-    ];
     const created: Candidate = {
       ...newCandData,
       id: `cand-${Date.now()}`,
-      avatar: avatars[Math.floor(Math.random() * avatars.length)],
+      avatar: `gender:${newCandData.gender || 'male'}`,
+      gender: newCandData.gender || 'male',
       registeredAt: new Date().toISOString().split('T')[0],
     };
     setCandidates(prev => [created, ...prev]);
@@ -382,17 +379,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ).catch(err => console.error('Error submitting assessment to Supabase:', err));
     }
 
+    const defaultReviewStatus = score >= 50 ? 'stand_by' : 'rejected';
+
     setAssignments(prev =>
       prev.map(a => {
         if (a.id === assignmentId) {
           return {
             ...a,
             status: 'completed',
+            reviewStatus: defaultReviewStatus,
             score,
             totalQuestions,
             correctAnswersCount: correctCount,
             passedThreshold: passed,
-            answers: userAnswers,
+            answers: { ...userAnswers, _review_status: defaultReviewStatus },
             completedAt,
           };
         }
@@ -406,6 +406,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalQuestions,
       passed,
     };
+  };
+
+  const updateAssignmentReviewStatus = async (
+    assignmentId: string,
+    reviewStatus: 'stand_by' | 'approved' | 'rejected'
+  ) => {
+    const target = assignments.find(a => a.id === assignmentId);
+    if (isSupabaseConfigured) {
+      try {
+        await assignmentService.updateReviewStatus(assignmentId, reviewStatus, target?.answers || {});
+      } catch (err) {
+        console.error('Error updating review status on Supabase:', err);
+      }
+    }
+
+    setAssignments(prev =>
+      prev.map(a => {
+        if (a.id === assignmentId) {
+          return {
+            ...a,
+            reviewStatus,
+            answers: { ...(a.answers || {}), _review_status: reviewStatus },
+          };
+        }
+        return a;
+      })
+    );
   };
 
   const createArea = async (name: string, description: string = ''): Promise<QuizArea> => {
@@ -450,6 +477,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         assignQuiz,
         assignCustomQuiz,
         submitAssessment,
+        updateAssignmentReviewStatus,
         deleteQuiz,
         deleteCandidate,
       }}

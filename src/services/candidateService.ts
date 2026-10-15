@@ -18,19 +18,16 @@ export const candidateService = {
       name: c.name,
       email: c.email,
       roleApplied: c.role_applied,
-      avatar: c.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      avatar: c.avatar || 'gender:male',
+      gender: c.avatar?.startsWith('gender:')
+        ? (c.avatar.replace('gender:', '') as 'male' | 'female')
+        : undefined,
       registeredAt: c.registered_at ? c.registered_at.split('T')[0] : '',
     }));
   },
 
-  async create(candidateData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'>): Promise<Candidate> {
-    const avatars = [
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
-    ];
-
-    const avatar = avatars[Math.floor(Math.random() * avatars.length)];
+  async create(candidateData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female' }): Promise<Candidate> {
+    const avatar = `gender:${candidateData.gender || 'male'}`;
 
     const { data, error } = await supabase
       .from('candidates')
@@ -51,6 +48,7 @@ export const candidateService = {
       email: data.email,
       roleApplied: data.role_applied,
       avatar: data.avatar,
+      gender: candidateData.gender || 'male',
       registeredAt: data.registered_at ? data.registered_at.split('T')[0] : '',
     };
   },

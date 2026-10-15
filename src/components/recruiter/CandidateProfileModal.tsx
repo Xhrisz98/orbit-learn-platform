@@ -1,0 +1,262 @@
+import React from 'react';
+import { useApp } from '../../context/AppContext';
+import type { Candidate, AssessmentAssignment } from '../../types';
+import { resolveCandidateGender, getCandidateInitials } from '../../utils/genderHelper';
+import { getLocalizedArea } from '../../utils/areaLocalization';
+import {
+  X,
+  Mail,
+  Briefcase,
+  CheckCircle2,
+  Clock,
+  Eye,
+  SendHorizontal,
+} from 'lucide-react';
+
+interface Props {
+  candidate: Candidate | null;
+  onClose: () => void;
+  onViewScorecard?: (assignment: AssessmentAssignment) => void;
+  onAssignTest?: (candidateId: string) => void;
+}
+
+export const CandidateProfileModal: React.FC<Props> = ({
+  candidate,
+  onClose,
+  onViewScorecard,
+  onAssignTest,
+}) => {
+  const { assignments, language, t } = useApp();
+
+  if (!candidate) return null;
+
+  const isEs = language === 'es';
+  const gender = resolveCandidateGender(candidate);
+  const isFemale = gender === 'female';
+  const initials = getCandidateInitials(candidate.name);
+
+  // Candidate assignments
+  const candAssignments = assignments.filter(a => a.candidateId === candidate.id);
+  const completedAssignments = candAssignments.filter(a => a.status === 'completed');
+  const scores = completedAssignments.map(a => a.score ?? 0);
+  const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+  const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 border border-slate-200 shadow-2xl my-8 max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-4">
+            {/* Non-image Gender Avatar */}
+            <div
+              className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-black text-xl shadow-xs border shrink-0 ${
+                isFemale
+                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                  : 'bg-blue-50 text-blue-700 border-blue-200'
+              }`}
+            >
+              <span>{initials}</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5">
+                {isFemale ? (isEs ? 'Mujer' : 'Female') : (isEs ? 'Hombre' : 'Male')}
+              </span>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    isFemale
+                      ? 'bg-purple-100/60 text-purple-800 border-purple-200'
+                      : 'bg-blue-100/60 text-blue-800 border-blue-200'
+                  }`}
+                >
+                  {isFemale ? (isEs ? '👩 Candidata Mujer' : '👩 Female Candidate') : (isEs ? '👨 Candidato Hombre' : '👨 Male Candidate')}
+                </span>
+                <span className="text-xs text-slate-400 font-mono">ID: {candidate.id.substring(0, 8)}...</span>
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                {candidate.name}
+              </h2>
+
+              <p className="text-xs text-[#2368f5] font-semibold flex items-center gap-1.5 mt-0.5">
+                <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                <span>{candidate.roleApplied}</span>
+                <span className="text-slate-300">•</span>
+                <Mail className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-slate-500 font-normal">{candidate.email}</span>
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-4">
+          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+            <span className="text-[11px] text-slate-500 block font-medium">
+              {isEs ? 'Asignadas' : 'Assigned'}
+            </span>
+            <span className="text-xl font-black text-slate-900 mt-0.5 block">
+              {candAssignments.length}
+            </span>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+            <span className="text-[11px] text-slate-500 block font-medium">
+              {isEs ? 'Completadas' : 'Completed'}
+            </span>
+            <span className="text-xl font-black text-emerald-600 mt-0.5 block">
+              {completedAssignments.length}
+            </span>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+            <span className="text-[11px] text-slate-500 block font-medium">
+              {isEs ? 'Score Promedio' : 'Average Score'}
+            </span>
+            <span className="text-xl font-black text-[#2368f5] mt-0.5 block">
+              {completedAssignments.length > 0 ? `${avgScore}%` : '--'}
+            </span>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+            <span className="text-[11px] text-slate-500 block font-medium">
+              {isEs ? 'Mejor Score' : 'Best Score'}
+            </span>
+            <span className="text-xl font-black text-purple-600 mt-0.5 block">
+              {completedAssignments.length > 0 ? `${bestScore}%` : '--'}
+            </span>
+          </div>
+        </div>
+
+        {/* Assessment History */}
+        <div className="overflow-y-auto flex-1 space-y-3 pr-1 py-1">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800">
+              {isEs ? 'Historial de Evaluaciones Técnicas' : 'Technical Assessments History'} ({candAssignments.length})
+            </h3>
+            {onAssignTest && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onAssignTest(candidate.id);
+                }}
+                className="text-xs font-bold text-[#2368f5] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <SendHorizontal className="w-3 h-3" />
+                <span>{isEs ? 'Asignar Nuevo Test' : 'Assign New Test'}</span>
+              </button>
+            )}
+          </div>
+
+          {candAssignments.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              {isEs ? 'No hay evaluaciones asignadas a este postulante.' : 'No assessments assigned to this candidate yet.'}
+            </div>
+          ) : (
+            candAssignments.map(item => {
+              const isDone = item.status === 'completed';
+              const effectiveStatus = item.reviewStatus || (isDone ? ((item.score ?? 0) >= 50 ? 'stand_by' : 'rejected') : 'pending');
+
+              return (
+                <div
+                  key={item.id}
+                  className="p-3.5 bg-white rounded-2xl border border-slate-200 hover:border-slate-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                >
+                  <div>
+                    <h4 className="font-bold text-xs text-slate-900">
+                      {getLocalizedArea(item.quizTitle, language)}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
+                      <span>{isEs ? 'Asignado:' : 'Assigned:'} {item.assignedAt}</span>
+                      {item.completedAt && (
+                        <>
+                          <span>•</span>
+                          <span>{isEs ? 'Finalizado:' : 'Completed:'} {item.completedAt}</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* Score */}
+                    {isDone ? (
+                      <span
+                        className={`text-xs font-black px-2.5 py-1 rounded-lg ${
+                          (item.score ?? 0) >= 75
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : (item.score ?? 0) >= 50
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      >
+                        {item.score}%
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400 font-semibold italic">--</span>
+                    )}
+
+                    {/* Status badge */}
+                    {!isDone ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span>{isEs ? 'Aún no completada' : 'Not completed'}</span>
+                      </span>
+                    ) : effectiveStatus === 'approved' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>{isEs ? 'Aprobado' : 'Approved'}</span>
+                      </span>
+                    ) : effectiveStatus === 'rejected' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        <X className="w-3 h-3 text-rose-600" />
+                        <span>{isEs ? 'Rechazado' : 'Rejected'}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span>Stand By</span>
+                      </span>
+                    )}
+
+                    {/* View scorecard */}
+                    {isDone && onViewScorecard && (
+                      <button
+                        type="button"
+                        onClick={() => onViewScorecard(item)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-[#2368f5] hover:bg-blue-50 transition-colors cursor-pointer"
+                        title={isEs ? 'Ver Scorecard' : 'View Scorecard'}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="pt-4 border-t border-slate-100 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 text-xs font-bold bg-[#10243e] text-white rounded-xl hover:bg-[#1c3553] transition-colors cursor-pointer"
+          >
+            {t.common.close}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

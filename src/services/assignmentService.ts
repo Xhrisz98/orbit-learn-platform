@@ -23,6 +23,13 @@ export const assignmentService = {
       quizTitle: a.quiz?.title || 'Assessment',
       selectedQuestionIds: a.selected_question_ids || [],
       status: a.status,
+      reviewStatus:
+        a.answers?._review_status ||
+        (a.status === 'completed'
+          ? (a.score ?? 0) >= 50
+            ? 'stand_by'
+            : 'rejected'
+          : undefined),
       score: a.score,
       totalQuestions: a.total_questions,
       correctAnswersCount: a.correct_answers_count,
@@ -47,6 +54,19 @@ export const assignmentService = {
           })
         : undefined,
     }));
+  },
+
+  async updateReviewStatus(
+    assignmentId: string,
+    reviewStatus: 'stand_by' | 'approved' | 'rejected',
+    currentAnswers: Record<string, any> = {}
+  ): Promise<void> {
+    const updatedAnswers = { ...currentAnswers, _review_status: reviewStatus };
+    const { error } = await supabase
+      .from('assessment_assignments')
+      .update({ answers: updatedAnswers })
+      .eq('id', assignmentId);
+    if (error) throw error;
   },
 
   async assignCustom(candidateIds: string[], quizId: string, selectedQuestionIds: string[]): Promise<void> {

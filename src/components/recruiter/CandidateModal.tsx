@@ -14,6 +14,8 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState('');
   const [roleApplied, setRoleApplied] = useState('');
 
+  const [gender, setGender] = useState<'male' | 'female'>('male');
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -24,11 +26,13 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
       name,
       email,
       roleApplied: roleApplied || 'General Applicant',
+      gender,
     });
 
     setName('');
     setEmail('');
     setRoleApplied('');
+    setGender('male');
     onClose();
   };
 
@@ -92,6 +96,38 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
               onChange={e => setRoleApplied(e.target.value)}
               className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+              {t.recruiter.createCandidateModal.fieldGender} *
+            </label>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setGender('male')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                  gender === 'male'
+                    ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-xs ring-1 ring-blue-500'
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span className="text-base">👨</span>
+                <span>{t.recruiter.createCandidateModal.genderMale}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGender('female')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                  gender === 'female'
+                    ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-xs ring-1 ring-purple-500'
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span className="text-base">👩</span>
+                <span>{t.recruiter.createCandidateModal.genderFemale}</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-2 pt-2 border-t border-slate-200">

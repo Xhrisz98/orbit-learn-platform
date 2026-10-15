@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import type { AssessmentAssignment, Quiz } from '../../types';
+import type { AssessmentAssignment, Quiz, Candidate } from '../../types';
 import { QuizBuilderModal } from './QuizBuilderModal';
 import { CandidateModal } from './CandidateModal';
 import { AssignQuizModal } from './AssignQuizModal';
 import { ResultsAuditModal } from './ResultsAuditModal';
+import { CandidateProfileModal } from './CandidateProfileModal';
 import {
   Users,
   CheckCircle2,
@@ -19,10 +20,15 @@ import {
   Trash2,
   Edit3,
   Copy,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Calendar,
+  RotateCcw,
 } from 'lucide-react';
 
-
 import { getLocalizedArea } from '../../utils/areaLocalization';
+import { resolveCandidateGender, getCandidateInitials } from '../../utils/genderHelper';
 
 export const RecruiterDashboard: React.FC = () => {
   const {
@@ -31,6 +37,7 @@ export const RecruiterDashboard: React.FC = () => {
     assignments,
     deleteQuiz,
     deleteCandidate,
+    updateAssignmentReviewStatus,
     t,
     language,
   } = useApp();
@@ -44,10 +51,22 @@ export const RecruiterDashboard: React.FC = () => {
   const [isCandidateModalOpen, setIsCandidateModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAuditAssignment, setSelectedAuditAssignment] = useState<AssessmentAssignment | null>(null);
+  const [selectedProfileCandidate, setSelectedProfileCandidate] = useState<Candidate | null>(null);
 
-  // Filter & Search state for pipeline
+  // Filters state for pipeline
   const [searchQuery, setSearchQuery] = useState('');
-  const [stageFilter, setStageFilter] = useState<'all' | 'pending' | 'completed' | 'qualified'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'not_completed' | 'stand_by' | 'approved' | 'rejected'>('all');
+  const [scoreFilter, setScoreFilter] = useState<'all' | 'top' | 'passing' | 'low'>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  // Pagination state for pipeline (5, 10 default, 15, 20, 50)
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Pagination state for candidates directory (5, 10 default, 15, 20, 50)
+  const [candPageSize, setCandPageSize] = useState<number>(10);
+  const [candCurrentPage, setCandCurrentPage] = useState<number>(1);
 
   // Metrics calculation
   const totalCandidatesCount = candidates.length;
@@ -62,10 +81,37 @@ export const RecruiterDashboard: React.FC = () => {
 
   // Filtered pipeline list
   const filteredPipeline = assignments.filter(a => {
-    if (stageFilter === 'pending' && a.status !== 'pending') return false;
-    if (stageFilter === 'completed' && a.status !== 'completed') return false;
-    if (stageFilter === 'qualified' && ((a.score ?? 0) < 75 || a.status !== 'completed')) return false;
+    // Review / Completion Status Filter
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'not_completed') {
+        if (a.status === 'completed') return false;
+      } else {
+        if (a.status !== 'completed') return false;
+        const effectiveStatus = a.reviewStatus || ((a.score ?? 0) >= 50 ? 'stand_by' : 'rejected');
+        if (effectiveStatus !== statusFilter) return false;
+      }
+    }
 
+    // Score Filter
+    if (scoreFilter !== 'all') {
+      if (a.status !== 'completed') return false;
+      const score = a.score ?? 0;
+      if (scoreFilter === 'top' && score < 75) return false;
+      if (scoreFilter === 'passing' && (score < 50 || score >= 75)) return false;
+      if (scoreFilter === 'low' && score >= 50) return false;
+    }
+
+    // Date Range Filter
+    if (dateFrom) {
+      const itemDate = (a.completedAt || a.assignedAt || '').substring(0, 10);
+      if (itemDate && itemDate < dateFrom) return false;
+    }
+    if (dateTo) {
+      const itemDate = (a.completedAt || a.assignedAt || '').substring(0, 10);
+      if (itemDate && itemDate > dateTo) return false;
+    }
+
+    // Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchName = a.candidateName.toLowerCase().includes(q);
@@ -76,6 +122,36 @@ export const RecruiterDashboard: React.FC = () => {
 
     return true;
   });
+
+  const hasActiveFilters =
+    searchQuery !== '' ||
+    statusFilter !== 'all' ||
+    scoreFilter !== 'all' ||
+    dateFrom !== '' ||
+    dateTo !== '';
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setScoreFilter('all');
+    setDateFrom('');
+    setDateTo('');
+    setCurrentPage(1);
+  };
+
+  // Pipeline Pagination Calculations
+  const totalPipelineItems = filteredPipeline.length;
+  const totalPipelinePages = Math.max(1, Math.ceil(totalPipelineItems / pageSize));
+  const currentPipelinePage = Math.min(currentPage, totalPipelinePages);
+  const pipelineStartIndex = (currentPipelinePage - 1) * pageSize;
+  const paginatedPipeline = filteredPipeline.slice(pipelineStartIndex, pipelineStartIndex + pageSize);
+
+  // Candidates Directory Pagination Calculations
+  const totalCandItems = candidates.length;
+  const totalCandPages = Math.max(1, Math.ceil(totalCandItems / candPageSize));
+  const currentCandPage = Math.min(candCurrentPage, totalCandPages);
+  const candStartIndex = (currentCandPage - 1) * candPageSize;
+  const paginatedCandidates = candidates.slice(candStartIndex, candStartIndex + candPageSize);
 
   return (
     <div className="space-y-6">
@@ -229,63 +305,98 @@ export const RecruiterDashboard: React.FC = () => {
       {/* Tab 1: Pipeline & Scores Table */}
       {activeTab === 'pipeline' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          {/* Filter Bar */}
-          <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            <div className="relative w-full md:w-80">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder={t.recruiter.pipeline.searchPlaceholder}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-              />
-            </div>
+          {/* Advanced Filter Toolbar */}
+          <div className="p-4 sm:p-5 border-b border-slate-200 space-y-3 bg-slate-50/50">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+              {/* Search Bar */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={t.recruiter.pipeline.searchPlaceholder}
+                  value={searchQuery}
+                  onChange={e => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                />
+              </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-              <button
-                onClick={() => setStageFilter('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
-                  stageFilter === 'all'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t.recruiter.pipeline.filterAll}
-              </button>
+              {/* Status and Score Selectors */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Status Filter */}
+                <div className="flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5 text-slate-400" />
+                  <select
+                    value={statusFilter}
+                    onChange={e => {
+                      setStatusFilter(e.target.value as any);
+                      setCurrentPage(1);
+                    }}
+                    className="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2368f5] cursor-pointer"
+                  >
+                    <option value="all">{t.recruiter.pipeline.filterStatusAll}</option>
+                    <option value="not_completed">{t.recruiter.pipeline.filterStatusNotCompleted}</option>
+                    <option value="stand_by">{t.recruiter.pipeline.filterStatusStandBy}</option>
+                    <option value="approved">{t.recruiter.pipeline.filterStatusApproved}</option>
+                    <option value="rejected">{t.recruiter.pipeline.filterStatusRejected}</option>
+                  </select>
+                </div>
 
-              <button
-                onClick={() => setStageFilter('pending')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
-                  stageFilter === 'pending'
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t.recruiter.pipeline.filterPending}
-              </button>
+                {/* Score Filter */}
+                <select
+                  value={scoreFilter}
+                  onChange={e => {
+                    setScoreFilter(e.target.value as any);
+                    setCurrentPage(1);
+                  }}
+                  className="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2368f5] cursor-pointer"
+                >
+                  <option value="all">{t.recruiter.pipeline.filterScoreAll}</option>
+                  <option value="top">{t.recruiter.pipeline.filterScoreTop}</option>
+                  <option value="passing">{t.recruiter.pipeline.filterScorePassing}</option>
+                  <option value="low">{t.recruiter.pipeline.filterScoreLow}</option>
+                </select>
 
-              <button
-                onClick={() => setStageFilter('completed')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
-                  stageFilter === 'completed'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t.recruiter.pipeline.filterCompleted}
-              </button>
+                {/* Date Range Inputs */}
+                <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2 py-1">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <input
+                    type="date"
+                    title={t.recruiter.pipeline.filterDateFrom}
+                    value={dateFrom}
+                    onChange={e => {
+                      setDateFrom(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="text-xs text-slate-700 bg-transparent focus:outline-none cursor-pointer"
+                  />
+                  <span className="text-slate-300">-</span>
+                  <input
+                    type="date"
+                    title={t.recruiter.pipeline.filterDateTo}
+                    value={dateTo}
+                    onChange={e => {
+                      setDateTo(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="text-xs text-slate-700 bg-transparent focus:outline-none cursor-pointer"
+                  />
+                </div>
 
-              <button
-                onClick={() => setStageFilter('qualified')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
-                  stageFilter === 'qualified'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t.recruiter.pipeline.filterQualified}
-              </button>
+                {/* Clear Filters Button */}
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="flex items-center gap-1 px-2.5 py-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 transition-colors cursor-pointer"
+                    title={t.recruiter.pipeline.clearFilters}
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>{t.recruiter.pipeline.clearFilters}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -303,115 +414,247 @@ export const RecruiterDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {filteredPipeline.length === 0 ? (
+                {paginatedPipeline.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-12 text-slate-400">
                       {t.recruiter.pipeline.empty}
                     </td>
                   </tr>
                 ) : (
-                  filteredPipeline.map(item => (
-                    <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="p-4">
-                        <p className="font-bold text-slate-900">{item.candidateName}</p>
-                        <p className="text-[11px] text-slate-500">{item.roleApplied}</p>
-                      </td>
+                  paginatedPipeline.map(item => {
+                    const effectiveStatus = item.reviewStatus || ((item.score ?? 0) >= 50 ? 'stand_by' : 'rejected');
 
-                      <td className="p-4">
-                        <p className="font-medium text-slate-900 max-w-xs truncate">
-                          {getLocalizedArea(item.quizTitle, language)}
-                        </p>
-                        <p className="text-[11px] text-slate-400">{item.assignedAt}</p>
-                      </td>
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                        {/* 1. Candidate Column: Clickable to open Profile Card */}
+                        <td className="p-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const found = candidates.find(
+                                c => c.id === item.candidateId || c.email === item.candidateEmail
+                              );
+                              if (found) {
+                                setSelectedProfileCandidate(found);
+                              } else {
+                                setSelectedProfileCandidate({
+                                  id: item.candidateId,
+                                  name: item.candidateName,
+                                  email: item.candidateEmail,
+                                  roleApplied: item.roleApplied,
+                                  avatar: 'gender:male',
+                                  registeredAt: item.assignedAt,
+                                });
+                              }
+                            }}
+                            className="text-left group cursor-pointer block"
+                            title={t.recruiter.pipeline.viewCandidateProfile}
+                          >
+                            <p className="font-bold text-slate-900 group-hover:text-[#2368f5] group-hover:underline flex items-center gap-1 transition-colors">
+                              <span>{item.candidateName}</span>
+                              <span className="text-[10px] text-slate-400 group-hover:text-[#2368f5]">↗</span>
+                            </p>
+                            <p className="text-[11px] text-slate-500">{item.roleApplied}</p>
+                          </button>
+                        </td>
 
-                      <td className="p-4">
-                        {item.status === 'completed' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>{t.recruiter.pipeline.stageCompleted}</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700">
-                            <Clock className="w-3 h-3" />
-                            <span>{t.recruiter.pipeline.stagePending}</span>
-                          </span>
-                        )}
-                      </td>
+                        {/* 2. Quiz Column */}
+                        <td className="p-4">
+                          <p className="font-medium text-slate-900 max-w-xs truncate">
+                            {getLocalizedArea(item.quizTitle, language)}
+                          </p>
+                          <p className="text-[11px] text-slate-400">{item.assignedAt}</p>
+                        </td>
 
-                      <td className="p-4">
-                        {item.status === 'completed' ? (
-                          <div className="flex items-center gap-2">
+                        {/* 3. Testing Stage / Status Column */}
+                        <td className="p-4">
+                          {item.status === 'completed' ? (
+                            <div className="relative inline-block">
+                              <select
+                                value={effectiveStatus}
+                                onChange={e => {
+                                  const newStatus = e.target.value as 'stand_by' | 'approved' | 'rejected';
+                                  updateAssignmentReviewStatus(item.id, newStatus);
+                                }}
+                                aria-label={t.recruiter.pipeline.statusDropdownTitle}
+                                title={t.recruiter.pipeline.statusDropdownTitle}
+                                className={`appearance-none text-[11px] font-bold py-1 pl-2.5 pr-6 rounded-full border cursor-pointer transition-colors focus:outline-none focus:ring-1 ${
+                                  effectiveStatus === 'approved'
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 focus:ring-emerald-500'
+                                    : effectiveStatus === 'rejected'
+                                    ? 'bg-rose-50 text-rose-800 border-rose-300 focus:ring-rose-500'
+                                    : 'bg-amber-50 text-amber-800 border-amber-300 focus:ring-amber-500'
+                                }`}
+                              >
+                                <option value="stand_by">⏳ {t.recruiter.pipeline.statusStandBy}</option>
+                                <option value="approved">✓ {t.recruiter.pipeline.statusApproved}</option>
+                                <option value="rejected">✕ {t.recruiter.pipeline.statusRejected}</option>
+                              </select>
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-slate-500">
+                                <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 20 20">
+                                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                </svg>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              <span>{t.recruiter.pipeline.statusNotCompleted}</span>
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 4. Overall Score Column: Percentage only, text removed */}
+                        <td className="p-4">
+                          {item.status === 'completed' ? (
                             <span
-                              className={`text-sm font-black px-2 py-0.5 rounded-lg ${
+                              className={`inline-block text-xs font-black px-2.5 py-1 rounded-lg ${
                                 (item.score ?? 0) >= 75
                                   ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-amber-100 text-amber-800'
+                                  : (item.score ?? 0) >= 50
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-rose-100 text-rose-800'
                               }`}
                             >
                               {item.score}%
                             </span>
-                            <span className="text-[11px] font-bold text-slate-500">
-                              {(item.score ?? 0) >= 75 ? t.common.qualified : t.common.notQualified}
+                          ) : (
+                            <span className="text-slate-400 font-mono text-xs">--</span>
+                          )}
+                        </td>
+
+                        {/* 5. Hits Column */}
+                        <td className="p-4">
+                          {item.status === 'completed' ? (
+                            <span className="font-semibold text-slate-700">
+                              {item.correctAnswersCount} / {item.totalQuestions}
                             </span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic">--</span>
-                        )}
-                      </td>
+                          ) : (
+                            <span className="text-slate-400">0 / {item.totalQuestions}</span>
+                          )}
+                        </td>
 
-                      <td className="p-4">
-                        {item.status === 'completed' ? (
-                          <span className="font-semibold text-slate-700">
-                            {item.correctAnswersCount} / {item.totalQuestions}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">0 / {item.totalQuestions}</span>
-                        )}
-                      </td>
-
-                      <td className="p-4 text-right">
-                        {item.status === 'completed' ? (
-                          <button
-                            onClick={() => setSelectedAuditAssignment(item)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-[#2368f5] font-bold hover:bg-blue-100 transition-colors cursor-pointer"
-                          >
-                            <Eye className="w-3 h-3" />
-                            <span>{t.recruiter.pipeline.viewAudit}</span>
-                          </button>
-                        ) : (
-                          <div className="flex items-center justify-end gap-2">
+                        {/* 6. Audit & Actions Column */}
+                        <td className="p-4 text-right">
+                          {item.status === 'completed' ? (
                             <button
-                              onClick={() => {
-                                const link = `${window.location.origin}?code=${item.id}`;
-                                navigator.clipboard.writeText(link);
-                                alert(
-                                  t.recruiter.pipeline.linkCopiedAlert
-                                    .replace('{name}', item.candidateName)
-                                    .replace('{email}', item.candidateEmail) + `\n\n${link}`
-                                );
-                              }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 transition-colors cursor-pointer text-xs border border-emerald-200"
-                              title={t.recruiter.pipeline.copyLinkBtn}
+                              onClick={() => setSelectedAuditAssignment(item)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-[#2368f5] font-bold hover:bg-blue-100 transition-colors cursor-pointer"
                             >
-                              <Copy className="w-3 h-3" />
-                              <span>{t.recruiter.pipeline.copyLinkBtn}</span>
+                              <Eye className="w-3 h-3" />
+                              <span>{t.recruiter.pipeline.viewAudit}</span>
                             </button>
-                            <button
-                              onClick={() => {
-                                alert(t.recruiter.pipeline.reminderSentAlert.replace('{email}', item.candidateEmail));
-                              }}
-                              className="text-slate-400 hover:text-slate-700 text-[11px] font-semibold cursor-pointer"
-                            >
-                              {t.recruiter.pipeline.remindBtn}
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                          ) : (
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  const link = `${window.location.origin}?code=${item.id}`;
+                                  navigator.clipboard.writeText(link);
+                                  alert(
+                                    t.recruiter.pipeline.linkCopiedAlert
+                                      .replace('{name}', item.candidateName)
+                                      .replace('{email}', item.candidateEmail) + `\n\n${link}`
+                                  );
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 transition-colors cursor-pointer text-xs border border-emerald-200"
+                                title={t.recruiter.pipeline.copyLinkBtn}
+                              >
+                                <Copy className="w-3 h-3" />
+                                <span>{t.recruiter.pipeline.copyLinkBtn}</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  alert(t.recruiter.pipeline.reminderSentAlert.replace('{email}', item.candidateEmail));
+                                }}
+                                className="text-slate-400 hover:text-slate-700 text-[11px] font-semibold cursor-pointer"
+                              >
+                                {t.recruiter.pipeline.remindBtn}
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500">
+                {t.recruiter.pipeline.showingPage
+                  .replace('{from}', totalPipelineItems === 0 ? '0' : String(pipelineStartIndex + 1))
+                  .replace('{to}', String(Math.min(pipelineStartIndex + pageSize, totalPipelineItems)))
+                  .replace('{total}', String(totalPipelineItems))}
+              </span>
+
+              {/* Page Size Selector: 5, 10 default, 15, 20, 50 */}
+              <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
+                <span className="text-xs text-slate-400">{t.recruiter.pipeline.pageSizeLabel}</span>
+                <select
+                  value={pageSize}
+                  onChange={e => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                >
+                  {[5, 10, 15, 20, 50].map(size => (
+                    <option key={size} value={size}>
+                      {size} {t.recruiter.pipeline.perPage}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Page Buttons */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPipelinePage <= 1}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>{t.recruiter.pipeline.prevPage}</span>
+              </button>
+
+              <div className="flex items-center gap-1 px-1">
+                {Array.from({ length: totalPipelinePages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPipelinePages || Math.abs(p - currentPipelinePage) <= 1)
+                  .map((page, idx, arr) => {
+                    const prevPageNumber = arr[idx - 1];
+                    const hasGap = prevPageNumber && page - prevPageNumber > 1;
+                    return (
+                      <React.Fragment key={page}>
+                        {hasGap && <span className="text-xs text-slate-400 px-1">...</span>}
+                        <button
+                          onClick={() => setCurrentPage(page)}
+                          className={`min-w-7 h-7 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                            currentPipelinePage === page
+                              ? 'bg-[#2368f5] text-white shadow-xs'
+                              : 'text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPipelinePages, p + 1))}
+                disabled={currentPipelinePage >= totalPipelinePages}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+              >
+                <span>{t.recruiter.pipeline.nextPage}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -530,9 +773,12 @@ export const RecruiterDashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {candidates.map(cand => {
+            {paginatedCandidates.map(cand => {
               const candAssignments = assignments.filter(a => a.candidateId === cand.id);
               const completed = candAssignments.filter(a => a.status === 'completed');
+              const candGender = resolveCandidateGender(cand);
+              const isFemaleCand = candGender === 'female';
+              const candInitials = getCandidateInitials(cand.name);
 
               return (
                 <div
@@ -541,11 +787,36 @@ export const RecruiterDashboard: React.FC = () => {
                 >
                   <div>
                     <div className="flex items-start justify-between">
-                      <img
-                        src={cand.avatar}
-                        alt={cand.name}
-                        className="w-12 h-12 rounded-full object-cover ring-2 ring-blue-200 shadow-2xs"
-                      />
+                      {/* Stylized Non-Image Gender Avatar */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProfileCandidate(cand)}
+                        className="flex items-center gap-2.5 text-left cursor-pointer group"
+                        title={t.recruiter.pipeline.viewCandidateProfile}
+                      >
+                        <div
+                          className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center font-black text-sm shadow-2xs border shrink-0 transition-transform group-hover:scale-105 ${
+                            isFemaleCand
+                              ? 'bg-purple-50 text-purple-700 border-purple-200'
+                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}
+                        >
+                          <span>{candInitials}</span>
+                          <span className="text-[8px] font-bold uppercase tracking-wider">
+                            {isFemaleCand ? (language === 'es' ? 'Mujer' : 'Female') : (language === 'es' ? 'Hombre' : 'Male')}
+                          </span>
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                            isFemaleCand
+                              ? 'bg-purple-100/60 text-purple-800 border-purple-200'
+                              : 'bg-blue-100/60 text-blue-800 border-blue-200'
+                          }`}
+                        >
+                          {isFemaleCand ? (language === 'es' ? '👩 Mujer' : '👩 Female') : (language === 'es' ? '👨 Hombre' : '👨 Male')}
+                        </span>
+                      </button>
+
                       <button
                         onClick={() => deleteCandidate(cand.id)}
                         className="text-slate-300 hover:text-red-500 p-1 cursor-pointer"
@@ -555,9 +826,19 @@ export const RecruiterDashboard: React.FC = () => {
                       </button>
                     </div>
 
-                    <h3 className="font-bold text-sm text-slate-900 mt-3">{cand.name}</h3>
-                    <p className="text-xs text-[#2368f5] font-semibold">{cand.roleApplied}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{cand.email}</p>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProfileCandidate(cand)}
+                      className="text-left w-full mt-3 group cursor-pointer"
+                      title={t.recruiter.pipeline.viewCandidateProfile}
+                    >
+                      <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#2368f5] group-hover:underline flex items-center justify-between">
+                        <span>{cand.name}</span>
+                        <span className="text-xs text-slate-400 group-hover:text-[#2368f5]">↗</span>
+                      </h3>
+                      <p className="text-xs text-[#2368f5] font-semibold">{cand.roleApplied}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{cand.email}</p>
+                    </button>
 
                     <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1">
                       <div className="flex justify-between">
@@ -571,10 +852,18 @@ export const RecruiterDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100">
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedProfileCandidate(cand)}
+                      className="flex-1 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>{language === 'es' ? 'Ver Ficha' : 'Profile'}</span>
+                    </button>
+
                     <button
                       onClick={() => setIsAssignModalOpen(true)}
-                      className="w-full py-2 bg-blue-50 text-[#2368f5] rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2 bg-blue-50 text-[#2368f5] rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
                     >
                       <SendHorizontal className="w-3 h-3" />
                       <span>{t.recruiter.candidates.assignQuizBtn}</span>
@@ -584,6 +873,74 @@ export const RecruiterDashboard: React.FC = () => {
               );
             })}
           </div>
+
+          {/* Candidates Pagination Controls */}
+          {totalCandItems > 5 && (
+            <div className="p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white mt-4">
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-500">
+                  {t.recruiter.pipeline.showingPage
+                    .replace('{from}', totalCandItems === 0 ? '0' : String(candStartIndex + 1))
+                    .replace('{to}', String(Math.min(candStartIndex + candPageSize, totalCandItems)))
+                    .replace('{total}', String(totalCandItems))}
+                </span>
+
+                <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
+                  <span className="text-xs text-slate-400">{t.recruiter.pipeline.pageSizeLabel}</span>
+                  <select
+                    value={candPageSize}
+                    onChange={e => {
+                      setCandPageSize(Number(e.target.value));
+                      setCandCurrentPage(1);
+                    }}
+                    className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                  >
+                    {[5, 10, 15, 20, 50].map(size => (
+                      <option key={size} value={size}>
+                        {size} {t.recruiter.pipeline.perPage}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCandCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentCandPage <= 1}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>{t.recruiter.pipeline.prevPage}</span>
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalCandPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCandCurrentPage(page)}
+                      className={`min-w-7 h-7 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                        currentCandPage === page
+                          ? 'bg-[#2368f5] text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCandCurrentPage(p => Math.min(totalCandPages, p + 1))}
+                  disabled={currentCandPage >= totalCandPages}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                >
+                  <span>{t.recruiter.pipeline.nextPage}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -610,6 +967,19 @@ export const RecruiterDashboard: React.FC = () => {
       <ResultsAuditModal
         assignment={selectedAuditAssignment}
         onClose={() => setSelectedAuditAssignment(null)}
+      />
+
+      <CandidateProfileModal
+        candidate={selectedProfileCandidate}
+        onClose={() => setSelectedProfileCandidate(null)}
+        onViewScorecard={assignment => {
+          setSelectedProfileCandidate(null);
+          setSelectedAuditAssignment(assignment);
+        }}
+        onAssignTest={() => {
+          setSelectedProfileCandidate(null);
+          setIsAssignModalOpen(true);
+        }}
       />
     </div>
   );
