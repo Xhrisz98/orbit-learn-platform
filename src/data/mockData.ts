@@ -366,7 +366,9 @@ export const initialCandidates: Candidate[] = [
     name: 'Sofia Chen',
     email: 'sofia.chen@skillproof-talent.com',
     roleApplied: 'Industrial Electrician (Journeyman)',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    area: 'Engineering & Technical',
+    avatar: 'gender:female|area:Engineering & Technical',
+    gender: 'female',
     registeredAt: '2026-10-02',
   },
   {
@@ -374,7 +376,9 @@ export const initialCandidates: Candidate[] = [
     name: 'Mateo Rodriguez',
     email: 'mateo.rodriguez@skillproof-talent.com',
     roleApplied: 'Network Systems Administrator',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    area: 'Information Technology',
+    avatar: 'gender:male|area:Information Technology',
+    gender: 'male',
     registeredAt: '2026-10-03',
   },
   {
@@ -382,7 +386,9 @@ export const initialCandidates: Candidate[] = [
     name: 'Elena Gomez',
     email: 'elena.gomez@skillproof-talent.com',
     roleApplied: 'Certified Clinical Medical Assistant',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    area: 'Health Care',
+    avatar: 'gender:female|area:Health Care',
+    gender: 'female',
     registeredAt: '2026-10-04',
   },
   {
@@ -390,7 +396,9 @@ export const initialCandidates: Candidate[] = [
     name: 'Lucas Vance',
     email: 'lucas.vance@skillproof-talent.com',
     roleApplied: 'Electrical Apprentice / Maintenance Tech',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    area: 'Maintenance & Operations',
+    avatar: 'gender:male|area:Maintenance & Operations',
+    gender: 'male',
     registeredAt: '2026-10-05',
   },
 ];

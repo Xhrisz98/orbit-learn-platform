@@ -35,6 +35,7 @@ interface AppContextType {
   createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => Promise<void>;
   updateQuiz: (quizId: string, updatedData: Partial<Quiz>) => Promise<void>;
   createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string }) => Promise<void>;
+  updateCandidate: (candidateId: string, updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string }) => Promise<void>;
   assignQuiz: (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => void;
   assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => Promise<void>;
   submitAssessment: (assignmentId: string, userAnswers: Record<string, string[]>) => SubmitResult;
@@ -260,6 +261,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCandidates(prev => [created, ...prev]);
   };
 
+  const updateCandidate = async (
+    candidateId: string,
+    updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string }
+  ) => {
+    if (isSupabaseConfigured) {
+      try {
+        const updated = await candidateService.update(candidateId, updatedData);
+        setCandidates(prev => prev.map(c => (c.id === candidateId ? updated : c)));
+        setAssignments(prev =>
+          prev.map(a =>
+            a.candidateId === candidateId
+              ? {
+                  ...a,
+                  candidateName: updated.name,
+                  candidateEmail: updated.email,
+                  roleApplied: updated.roleApplied,
+                }
+              : a
+          )
+        );
+        return;
+      } catch (err) {
+        console.error('Error updating candidate on Supabase:', err);
+      }
+    }
+
+    setCandidates(prev =>
+      prev.map(c => {
+        if (c.id !== candidateId) return c;
+        return {
+          ...c,
+          name: updatedData.name,
+          email: updatedData.email,
+          roleApplied: updatedData.roleApplied,
+          area: updatedData.area,
+          gender: updatedData.gender,
+          avatar: `gender:${updatedData.gender}${updatedData.area ? `|area:${updatedData.area}` : ''}`,
+        };
+      })
+    );
+
+    setAssignments(prev =>
+      prev.map(a =>
+        a.candidateId === candidateId
+          ? {
+              ...a,
+              candidateName: updatedData.name,
+              candidateEmail: updatedData.email,
+              roleApplied: updatedData.roleApplied,
+            }
+          : a
+      )
+    );
+  };
+
   const deleteCandidate = async (candidateId: string) => {
     if (isSupabaseConfigured) {
       try {
@@ -477,6 +533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createQuiz,
         updateQuiz,
         createCandidate,
+        updateCandidate,
         assignQuiz,
         assignCustomQuiz,
         submitAssessment,

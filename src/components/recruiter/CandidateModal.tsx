@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { X, UserPlus, Mars, Venus, Briefcase, Layers } from 'lucide-react';
+import { X, UserPlus, Mars, Venus, Briefcase, Layers, Edit3 } from 'lucide-react';
 import { getLocalizedArea } from '../../utils/areaLocalization';
+import { resolveCandidateGender } from '../../utils/genderHelper';
+import type { Candidate } from '../../types';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  candidateToEdit?: Candidate | null;
 }
 
-export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { createCandidate, areas, t, language } = useApp();
+export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEdit }) => {
+  const { createCandidate, updateCandidate, areas, t, language } = useApp();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -19,21 +22,52 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [customRoleText, setCustomRoleText] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
 
-  // Initialize selected area when modal opens
+  // Initialize or prefill fields when modal opens or candidateToEdit changes
   useEffect(() => {
-    if (isOpen && areas.length > 0) {
-      const initialArea = selectedArea || areas[0].name;
-      setSelectedArea(initialArea);
-      const areaObj = areas.find(a => a.name === initialArea);
-      const cls = areaObj?.classifications || [];
-      if (cls.length > 0) {
-        setSelectedClassification(cls[0]);
-        setIsCustomRole(false);
+    if (isOpen) {
+      if (candidateToEdit) {
+        setName(candidateToEdit.name);
+        setEmail(candidateToEdit.email);
+        const resolvedGender = resolveCandidateGender(candidateToEdit);
+        setGender(resolvedGender);
+
+        const candArea = candidateToEdit.area || (areas.length > 0 ? areas[0].name : '');
+        setSelectedArea(candArea);
+
+        const areaObj = areas.find(a => a.name === candArea);
+        const cls = areaObj?.classifications || [];
+        if (cls.includes(candidateToEdit.roleApplied)) {
+          setSelectedClassification(candidateToEdit.roleApplied);
+          setIsCustomRole(false);
+          setCustomRoleText('');
+        } else {
+          setSelectedClassification('');
+          setIsCustomRole(true);
+          setCustomRoleText(candidateToEdit.roleApplied || '');
+        }
       } else {
-        setIsCustomRole(true);
+        setName('');
+        setEmail('');
+        setGender('male');
+        setCustomRoleText('');
+        setIsCustomRole(false);
+
+        if (areas.length > 0) {
+          const initialArea = areas[0].name;
+          setSelectedArea(initialArea);
+          const areaObj = areas.find(a => a.name === initialArea);
+          const cls = areaObj?.classifications || [];
+          if (cls.length > 0) {
+            setSelectedClassification(cls[0]);
+            setIsCustomRole(false);
+          } else {
+            setSelectedClassification('');
+            setIsCustomRole(true);
+          }
+        }
       }
     }
-  }, [isOpen, areas]);
+  }, [isOpen, candidateToEdit, areas]);
 
   // Handle area change
   const handleAreaChange = (newAreaName: string) => {
@@ -54,19 +88,29 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const currentAreaObj = areas.find(a => a.name === selectedArea);
   const availableClassifications = currentAreaObj?.classifications || [];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
 
     const finalRole = isCustomRole ? customRoleText.trim() : selectedClassification;
 
-    createCandidate({
-      name: name.trim(),
-      email: email.trim(),
-      area: selectedArea,
-      roleApplied: finalRole || 'General Applicant',
-      gender,
-    });
+    if (candidateToEdit) {
+      await updateCandidate(candidateToEdit.id, {
+        name: name.trim(),
+        email: email.trim(),
+        area: selectedArea,
+        roleApplied: finalRole || 'General Applicant',
+        gender,
+      });
+    } else {
+      await createCandidate({
+        name: name.trim(),
+        email: email.trim(),
+        area: selectedArea,
+        roleApplied: finalRole || 'General Applicant',
+        gender,
+      });
+    }
 
     setName('');
     setEmail('');
@@ -80,13 +124,22 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-slate-200 shadow-2xl max-h-[92vh] overflow-y-auto">
         <div className="flex items-start justify-between pb-3 border-b border-slate-200">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">
-              {t.recruiter.createCandidateModal.title}
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {t.recruiter.createCandidateModal.subtitle}
-            </p>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#2368f5] flex items-center justify-center shrink-0">
+              {candidateToEdit ? <Edit3 className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                {candidateToEdit
+                  ? t.recruiter.createCandidateModal.editTitle
+                  : t.recruiter.createCandidateModal.title}
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {candidateToEdit
+                  ? t.recruiter.createCandidateModal.editSubtitle
+                  : t.recruiter.createCandidateModal.subtitle}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -230,8 +283,12 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
               type="submit"
               className="flex-1 py-2.5 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
             >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>{t.recruiter.createCandidateModal.saveBtn}</span>
+              {candidateToEdit ? <Edit3 className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
+              <span>
+                {candidateToEdit
+                  ? t.recruiter.createCandidateModal.saveChangesBtn
+                  : t.recruiter.createCandidateModal.saveBtn}
+              </span>
             </button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Candidate } from '../types';
+import { resolveCandidateGender } from '../utils/genderHelper';
 
 export const candidateService = {
   async getAll(): Promise<Candidate[]> {
@@ -24,6 +25,8 @@ export const candidateService = {
         if (aPart?.startsWith('area:')) {
           area = aPart.replace('area:', '');
         }
+      } else {
+        gender = resolveCandidateGender({ name: c.name, avatar: c.avatar });
       }
 
       return {
@@ -32,7 +35,7 @@ export const candidateService = {
         email: c.email,
         roleApplied: c.role_applied,
         area: area || undefined,
-        avatar: c.avatar || 'gender:male',
+        avatar: c.avatar || `gender:${gender}`,
         gender,
         registeredAt: c.registered_at ? c.registered_at.split('T')[0] : '',
       };
@@ -63,6 +66,38 @@ export const candidateService = {
       area: candidateData.area,
       avatar: data.avatar,
       gender: candidateData.gender || 'male',
+      registeredAt: data.registered_at ? data.registered_at.split('T')[0] : '',
+    };
+  },
+
+  async update(
+    candidateId: string,
+    candidateData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string }
+  ): Promise<Candidate> {
+    const avatar = `gender:${candidateData.gender}${candidateData.area ? `|area:${candidateData.area}` : ''}`;
+
+    const { data, error } = await supabase
+      .from('candidates')
+      .update({
+        name: candidateData.name,
+        email: candidateData.email,
+        role_applied: candidateData.roleApplied,
+        avatar,
+      })
+      .eq('id', candidateId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      roleApplied: data.role_applied,
+      area: candidateData.area,
+      avatar: data.avatar,
+      gender: candidateData.gender,
       registeredAt: data.registered_at ? data.registered_at.split('T')[0] : '',
     };
   },

@@ -267,6 +267,9 @@ export const translations = {
         genderMale: 'Male',
         genderFemale: 'Female',
         saveBtn: 'Save Candidate',
+        editTitle: 'Edit Candidate Profile',
+        editSubtitle: 'Modify candidate information, assigned area, role, and gender',
+        saveChangesBtn: 'Save Changes',
       },
       assignModal: {
         title: 'Custom Assessment Builder & Assignment',
@@ -605,6 +608,9 @@ export const translations = {
         genderMale: 'Masculino',
         genderFemale: 'Femenino',
         saveBtn: 'Guardar Candidato',
+        editTitle: 'Editar Perfil del Candidato',
+        editSubtitle: 'Modifica los datos del postulante, área asignada, rol y género',
+        saveChangesBtn: 'Guardar Cambios',
       },
       assignModal: {
         title: 'Creador de Examen y Asignación Personalizada',

@@ -13,6 +13,7 @@ import {
   SendHorizontal,
   Mars,
   Venus,
+  Edit3,
 } from 'lucide-react';
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
   onClose: () => void;
   onViewScorecard?: (assignment: AssessmentAssignment) => void;
   onAssignTest?: (candidateId: string) => void;
+  onEdit?: (candidate: Candidate) => void;
 }
 
 export const CandidateProfileModal: React.FC<Props> = ({
@@ -27,6 +29,7 @@ export const CandidateProfileModal: React.FC<Props> = ({
   onClose,
   onViewScorecard,
   onAssignTest,
+  onEdit,
 }) => {
   const { assignments, language, t } = useApp();
 
@@ -97,12 +100,28 @@ export const CandidateProfileModal: React.FC<Props> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onEdit(candidate);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-50 text-[#2368f5] hover:bg-blue-100 text-xs font-bold transition-colors border border-blue-200 cursor-pointer"
+                title={isEs ? 'Editar Perfil' : 'Edit Profile'}
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isEs ? 'Editar Perfil' : 'Edit Profile'}</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Stats Grid */}

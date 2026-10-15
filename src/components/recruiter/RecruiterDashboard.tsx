@@ -53,6 +53,7 @@ export const RecruiterDashboard: React.FC = () => {
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
   const [isCandidateModalOpen, setIsCandidateModalOpen] = useState(false);
+  const [candidateToEdit, setCandidateToEdit] = useState<Candidate | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAuditAssignment, setSelectedAuditAssignment] = useState<AssessmentAssignment | null>(null);
   const [selectedProfileCandidate, setSelectedProfileCandidate] = useState<Candidate | null>(null);
@@ -246,7 +247,10 @@ export const RecruiterDashboard: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setIsCandidateModalOpen(true)}
+            onClick={() => {
+              setCandidateToEdit(null);
+              setIsCandidateModalOpen(true);
+            }}
             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 text-[#10243e] text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <Users className="w-3.5 h-3.5" />
@@ -1051,7 +1055,10 @@ export const RecruiterDashboard: React.FC = () => {
               <p className="text-xs text-slate-500">{t.recruiter.candidates.subtitle}</p>
             </div>
             <button
-              onClick={() => setIsCandidateModalOpen(true)}
+              onClick={() => {
+                setCandidateToEdit(null);
+                setIsCandidateModalOpen(true);
+              }}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2368f5] text-white text-xs font-bold hover:bg-[#144cc0] transition-colors cursor-pointer shadow-xs self-start sm:self-auto"
             >
               <PlusCircle className="w-3.5 h-3.5" />
@@ -1196,13 +1203,27 @@ export const RecruiterDashboard: React.FC = () => {
                           </button>
                         </div>
 
-                        <button
-                          onClick={() => deleteCandidate(cand.id)}
-                          className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
-                          title="Delete candidate"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCandidateToEdit(cand);
+                              setIsCandidateModalOpen(true);
+                            }}
+                            className="text-slate-300 hover:text-[#2368f5] hover:bg-blue-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                            title={language === 'es' ? 'Editar perfil' : 'Edit profile'}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteCandidate(cand.id)}
+                            className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                            title={language === 'es' ? 'Eliminar candidato' : 'Delete candidate'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Area & Role Tags */}
@@ -1349,7 +1370,11 @@ export const RecruiterDashboard: React.FC = () => {
 
       <CandidateModal
         isOpen={isCandidateModalOpen}
-        onClose={() => setIsCandidateModalOpen(false)}
+        onClose={() => {
+          setIsCandidateModalOpen(false);
+          setCandidateToEdit(null);
+        }}
+        candidateToEdit={candidateToEdit}
       />
 
       <AssignQuizModal
@@ -1376,6 +1401,11 @@ export const RecruiterDashboard: React.FC = () => {
         onAssignTest={() => {
           setSelectedProfileCandidate(null);
           setIsAssignModalOpen(true);
+        }}
+        onEdit={cand => {
+          setSelectedProfileCandidate(null);
+          setCandidateToEdit(cand);
+          setIsCandidateModalOpen(true);
         }}
       />
     </div>

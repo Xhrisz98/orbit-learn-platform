@@ -13,9 +13,10 @@ export function resolveCandidateGender(candidate: Partial<Candidate>): 'male' | 
   if (candidate.gender) return candidate.gender;
 
   if (candidate.avatar?.startsWith('gender:')) {
-    const val = candidate.avatar.replace('gender:', '').toLowerCase();
-    if (val === 'female' || val === 'mujer') return 'female';
-    if (val === 'male' || val === 'hombre') return 'male';
+    const raw = candidate.avatar.replace('gender:', '').toLowerCase();
+    const [gPart] = raw.split('|');
+    if (gPart === 'female' || gPart === 'mujer') return 'female';
+    if (gPart === 'male' || gPart === 'hombre') return 'male';
   }
 
   // Check unsplash photo URLs in mockData for known females
