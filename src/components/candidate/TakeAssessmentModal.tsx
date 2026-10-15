@@ -4,6 +4,7 @@ import type { AssessmentAssignment } from '../../types';
 import {
   X,
   CheckCircle2,
+  Check,
   Clock,
   ArrowRight,
   ArrowLeft,
@@ -218,7 +219,7 @@ export const TakeAssessmentModal: React.FC<Props> = ({ assignment, onClose }) =>
                             : 'bg-slate-100 text-slate-500 border border-slate-200'
                         }`}
                       >
-                        {isChecked ? '✓' : String.fromCharCode(65 + oIdx)}
+                        {isChecked ? <Check className="w-3.5 h-3.5" /> : String.fromCharCode(65 + oIdx)}
                       </div>
                       <span className="text-xs sm:text-sm leading-relaxed">{opt.text}</span>
                     </div>

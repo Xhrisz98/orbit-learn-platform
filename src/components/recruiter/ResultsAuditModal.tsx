@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import type { AssessmentAssignment } from '../../types';
-import { X, CheckCircle2, XCircle, Award, FileDown } from 'lucide-react';
+import { X, CheckCircle2, XCircle, Award, FileDown, Info } from 'lucide-react';
 import { getLocalizedArea } from '../../utils/areaLocalization';
 import { exportScorecardToPdf } from '../../utils/pdfExport';
 
@@ -180,9 +180,15 @@ export const ResultsAuditModal: React.FC<Props> = ({ assignment, onClose }) => {
                   </div>
 
                   {q.explanation && (
-                    <p className="text-[11px] text-[#60738a] italic pt-1 border-t border-slate-200/60">
-                      💡 {q.explanation}
-                    </p>
+                    <div className="flex items-start gap-1.5 text-[11px] text-[#60738a] pt-1 border-t border-slate-200/60">
+                      <Info className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                      <p>
+                        <span className="font-semibold text-slate-700">
+                          {language === 'es' ? 'Fundamento Técnico:' : 'Technical Rationale:'}
+                        </span>{' '}
+                        {q.explanation}
+                      </p>
+                    </div>
                   )}
                 </div>
               );

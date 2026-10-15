@@ -11,6 +11,7 @@ import {
   Clock,
   Eye,
   SendHorizontal,
+  User,
 } from 'lucide-react';
 
 interface Props {
@@ -65,13 +66,14 @@ export const CandidateProfileModal: React.FC<Props> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center gap-1 ${
                     isFemale
                       ? 'bg-purple-100/60 text-purple-800 border-purple-200'
                       : 'bg-blue-100/60 text-blue-800 border-blue-200'
                   }`}
                 >
-                  {isFemale ? (isEs ? '👩 Candidata Mujer' : '👩 Female Candidate') : (isEs ? '👨 Candidato Hombre' : '👨 Male Candidate')}
+                  <User className="w-3 h-3" />
+                  <span>{isFemale ? (isEs ? 'Candidata Mujer' : 'Female Candidate') : (isEs ? 'Candidato Hombre' : 'Male Candidate')}</span>
                 </span>
                 <span className="text-xs text-slate-400 font-mono">ID: {candidate.id.substring(0, 8)}...</span>
               </div>

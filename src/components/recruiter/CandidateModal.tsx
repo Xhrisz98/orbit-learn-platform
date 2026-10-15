@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { X, UserPlus } from 'lucide-react';
+import { X, UserPlus, User } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -112,7 +112,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <span className="text-base">👨</span>
+                <User className="w-3.5 h-3.5 text-blue-600" />
                 <span>{t.recruiter.createCandidateModal.genderMale}</span>
               </button>
               <button
@@ -124,7 +124,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <span className="text-base">👩</span>
+                <User className="w-3.5 h-3.5 text-purple-600" />
                 <span>{t.recruiter.createCandidateModal.genderFemale}</span>
               </button>
             </div>

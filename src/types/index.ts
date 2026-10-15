@@ -17,6 +17,7 @@ export interface QuizArea {
   id: string;
   name: string;
   description?: string;
+  classifications?: string[];
   icon?: string;
   createdAt?: string;
 }
@@ -26,6 +27,7 @@ export interface Quiz {
   title: string;
   category: string;
   description: string;
+  supportedClassifications?: string[];
   timeLimitMinutes?: number;
   questions: Question[];
   createdAt: string;

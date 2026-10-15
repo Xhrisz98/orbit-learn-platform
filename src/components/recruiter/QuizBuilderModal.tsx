@@ -476,9 +476,10 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
                             <button
                               type="button"
                               onClick={() => handleRemoveOption(qIndex, optIndex)}
-                              className="text-slate-400 hover:text-red-500 text-xs px-1 cursor-pointer"
+                              className="text-slate-400 hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
+                              title={t.recruiter.createQuizModal.removeOption}
                             >
-                              ✕
+                              <X className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>

@@ -54,12 +54,12 @@ export function exportScorecardToPdf(
             optBorder = '#86efac';
             optBg = '#f0fdf4';
             optColor = '#166534';
-            tag = isEs ? '✓ Respuesta Correcta' : '✓ Selected Correct';
+            tag = isEs ? 'Respuesta Correcta' : 'Selected Correct';
           } else if (wasSelected && !isOptionKey) {
             optBorder = '#fca5a5';
             optBg = '#fef2f2';
             optColor = '#991b1b';
-            tag = isEs ? '✗ Selección Incorrecta' : '✗ Selected Wrong';
+            tag = isEs ? 'Selección Incorrecta' : 'Selected Wrong';
           } else if (!wasSelected && isOptionKey) {
             optBorder = '#fde68a';
             optBg = '#fefce8';
@@ -98,7 +98,7 @@ export function exportScorecardToPdf(
 
           ${q.explanation ? `
             <div style="margin-top: 8px; padding: 6px 10px; border-radius: 6px; background: #f1f5f9; font-size: 10.5px; color: #475569; font-style: italic;">
-              💡 <strong>${isEs ? 'Explicación Técnica:' : 'Technical Rationale:'}</strong> ${q.explanation}
+              <strong>${isEs ? 'Explicación Técnica:' : 'Technical Rationale:'}</strong> ${q.explanation}
             </div>
           ` : ''}
         </div>
@@ -228,7 +228,7 @@ export function exportScorecardToPdf(
         <div>
           <div style="font-size: 16px; font-weight: 800; color: #0f172a;">${assignment.candidateName}</div>
           <div style="font-size: 12px; color: #2563eb; font-weight: 600;">${assignment.roleApplied || 'Technical Candidate'}</div>
-          <div style="font-size: 11px; color: #64748b; margin-top: 4px;">✉ ${assignment.candidateEmail}</div>
+          <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Email: ${assignment.candidateEmail}</div>
           <div style="font-size: 11px; color: #334155; margin-top: 8px;">
             <strong>${isEs ? 'Evaluación:' : 'Assessment:'}</strong> ${getLocalizedArea(assignment.quizTitle, language)}
           </div>

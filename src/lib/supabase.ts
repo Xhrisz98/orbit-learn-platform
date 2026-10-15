@@ -12,7 +12,7 @@ export const isSupabaseConfigured = Boolean(
 
 if (!isSupabaseConfigured) {
   console.warn(
-    '⚠️ Supabase no está configurado aún. Agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en tu archivo .env.local.'
+    '[Supabase] Supabase is not configured yet. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local.'
   );
 }
 

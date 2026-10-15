@@ -9,6 +9,9 @@ import {
   Search,
   Users,
   BookOpen,
+  User,
+  Briefcase,
+  Check,
 } from 'lucide-react';
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
@@ -221,11 +224,24 @@ export const AssignQuizModal: React.FC<Props> = ({
                         ) : (
                           <Square className="w-4 h-4 text-slate-300 shrink-0" />
                         )}
-                        <img
-                          src={cand.avatar}
-                          alt={cand.name}
-                          className="w-6 h-6 rounded-full object-cover shrink-0"
-                        />
+                        <div
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border ${
+                            cand.gender === 'female'
+                              ? 'bg-purple-50 border-purple-200 text-purple-600'
+                              : 'bg-blue-50 border-blue-200 text-blue-600'
+                          }`}
+                          title={
+                            cand.gender === 'female'
+                              ? language === 'es'
+                                ? 'Mujer'
+                                : 'Female'
+                              : language === 'es'
+                              ? 'Hombre'
+                              : 'Male'
+                          }
+                        >
+                          <User className="w-3.5 h-3.5" />
+                        </div>
                         <div className="truncate">
                           <p className="truncate">{cand.name}</p>
                           <p className="text-[10px] text-slate-400 truncate">{cand.roleApplied}</p>
@@ -253,6 +269,29 @@ export const AssignQuizModal: React.FC<Props> = ({
                     </option>
                   ))}
                 </select>
+
+                {currentQuiz?.supportedClassifications && currentQuiz.supportedClassifications.length > 0 && (
+                  <div className="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <p className="text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-[#2368f5]" />
+                      <span>
+                        {language === 'es'
+                          ? 'Puestos y Clasificaciones Compatibles (County of Orange):'
+                          : 'Supported Positions & Classifications (County of Orange):'}
+                      </span>
+                    </p>
+                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+                      {currentQuiz.supportedClassifications.map((item, idx) => (
+                        <span
+                          key={idx}
+                          className="text-[10px] font-medium px-2 py-0.5 bg-white border border-slate-200 text-slate-700 rounded-md"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Step 3: Manual Questions Selector */}
@@ -263,9 +302,12 @@ export const AssignQuizModal: React.FC<Props> = ({
                       <label className="text-xs font-bold text-slate-900">
                         {t.recruiter.assignModal.step3Label}
                       </label>
-                      <div className="text-[11px] font-bold text-[#2368f5] mt-0.5">
-                        ✓ {selectedQuestionIds.length} / {currentQuiz.questions.length}{' '}
-                        {t.recruiter.assignModal.selectedCounter}
+                      <div className="text-[11px] font-bold text-[#2368f5] mt-0.5 flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>
+                          {selectedQuestionIds.length} / {currentQuiz.questions.length}{' '}
+                          {t.recruiter.assignModal.selectedCounter}
+                        </span>
                       </div>
                     </div>
 

@@ -1,7 +1,9 @@
 import { supabase } from '../lib/supabase';
 import type { QuizArea } from '../types';
+import { orangeCountyAreas } from '../data/orangeCountyData';
 
 export const initialDefaultAreas: QuizArea[] = [
+  ...orangeCountyAreas,
   {
     id: 'area-tech',
     name: 'Tecnología & Software',
@@ -61,6 +63,12 @@ export const areaService = {
       name: item.name,
       description: item.description || '',
       icon: item.icon || 'Briefcase',
+      classifications:
+        item.classifications ||
+        orangeCountyAreas.find(
+          a => a.name.toLowerCase().trim() === item.name.toLowerCase().trim()
+        )?.classifications ||
+        [],
       createdAt: item.created_at ? item.created_at.split('T')[0] : '',
     }));
   },

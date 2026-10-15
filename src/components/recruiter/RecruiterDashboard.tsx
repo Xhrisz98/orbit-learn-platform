@@ -8,6 +8,7 @@ import { ResultsAuditModal } from './ResultsAuditModal';
 import { CandidateProfileModal } from './CandidateProfileModal';
 import {
   Users,
+  User,
   CheckCircle2,
   TrendingUp,
   Award,
@@ -25,6 +26,7 @@ import {
   Filter,
   Calendar,
   RotateCcw,
+  Briefcase,
 } from 'lucide-react';
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
@@ -67,6 +69,18 @@ export const RecruiterDashboard: React.FC = () => {
   // Pagination state for candidates directory (5, 10 default, 15, 20, 50)
   const [candPageSize, setCandPageSize] = useState<number>(10);
   const [candCurrentPage, setCandCurrentPage] = useState<number>(1);
+
+  // Filter & Pagination state for question banks (5, 10 default, 15, 20, 50)
+  const [quizSearchQuery, setQuizSearchQuery] = useState('');
+  const [quizCategoryFilter, setQuizCategoryFilter] = useState('all');
+  const [quizPageSize, setQuizPageSize] = useState<number>(10);
+  const [currentQuizPage, setCurrentQuizPage] = useState<number>(1);
+  const [assigningQuizId, setAssigningQuizId] = useState<string | undefined>(undefined);
+  const [expandedQuizIds, setExpandedQuizIds] = useState<Record<string, boolean>>({});
+
+  const toggleQuizExpanded = (quizId: string) => {
+    setExpandedQuizIds(prev => ({ ...prev, [quizId]: !prev[quizId] }));
+  };
 
   // Metrics calculation
   const totalCandidatesCount = candidates.length;
@@ -152,6 +166,34 @@ export const RecruiterDashboard: React.FC = () => {
   const currentCandPage = Math.min(candCurrentPage, totalCandPages);
   const candStartIndex = (currentCandPage - 1) * candPageSize;
   const paginatedCandidates = candidates.slice(candStartIndex, candStartIndex + candPageSize);
+
+  // Filtered Question Banks
+  const filteredQuizzes = quizzes.filter(q => {
+    if (quizCategoryFilter !== 'all' && q.category !== quizCategoryFilter) {
+      return false;
+    }
+    if (quizSearchQuery.trim()) {
+      const term = quizSearchQuery.toLowerCase().trim();
+      const matchTitle = (q.title || '').toLowerCase().includes(term);
+      const matchCat = (q.category || '').toLowerCase().includes(term);
+      const matchDesc = (q.description || '').toLowerCase().includes(term);
+      const matchClass = (q.supportedClassifications || []).some(c =>
+        c.toLowerCase().includes(term)
+      );
+      if (!matchTitle && !matchCat && !matchDesc && !matchClass) return false;
+    }
+    return true;
+  });
+
+  // Question Banks Pagination Calculations
+  const totalQuizItems = filteredQuizzes.length;
+  const totalQuizPages = Math.max(1, Math.ceil(totalQuizItems / quizPageSize));
+  const validQuizCurrentPage = Math.min(currentQuizPage, totalQuizPages);
+  const quizStartIndex = (validQuizCurrentPage - 1) * quizPageSize;
+  const paginatedQuizzes = filteredQuizzes.slice(quizStartIndex, quizStartIndex + quizPageSize);
+
+  // Unique categories for quiz filter dropdown
+  const uniqueQuizCategories = Array.from(new Set(quizzes.map(q => q.category))).filter(Boolean);
 
   return (
     <div className="space-y-6">
@@ -486,9 +528,9 @@ export const RecruiterDashboard: React.FC = () => {
                                     : 'bg-amber-50 text-amber-800 border-amber-300 focus:ring-amber-500'
                                 }`}
                               >
-                                <option value="stand_by">⏳ {t.recruiter.pipeline.statusStandBy}</option>
-                                <option value="approved">✓ {t.recruiter.pipeline.statusApproved}</option>
-                                <option value="rejected">✕ {t.recruiter.pipeline.statusRejected}</option>
+                                <option value="stand_by">{t.recruiter.pipeline.statusStandBy}</option>
+                                <option value="approved">{t.recruiter.pipeline.statusApproved}</option>
+                                <option value="rejected">{t.recruiter.pipeline.statusRejected}</option>
                               </select>
                               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-slate-500">
                                 <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 20 20">
@@ -662,7 +704,7 @@ export const RecruiterDashboard: React.FC = () => {
       {/* Tab 2: Questionnaires Bank */}
       {activeTab === 'quizzes' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-slate-900">{t.recruiter.quizzes.title}</h2>
               <p className="text-xs text-slate-500">{t.recruiter.quizzes.subtitle}</p>
@@ -672,86 +714,273 @@ export const RecruiterDashboard: React.FC = () => {
                 setEditingQuiz(null);
                 setIsQuizModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2368f5] text-white text-xs font-bold hover:bg-[#144cc0] transition-colors cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2368f5] text-white text-xs font-bold hover:bg-[#144cc0] transition-colors cursor-pointer shadow-xs self-start sm:self-auto"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>{t.recruiter.quizzes.newQuizBtn}</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {quizzes.map(quiz => (
-              <div
-                key={quiz.id}
-                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between hover:border-[#2368f5] transition-all"
+          {/* Search & Filter Toolbar */}
+          <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
+            <div className="flex-1 flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder={t.recruiter.quizzes.searchPlaceholder}
+                  value={quizSearchQuery}
+                  onChange={e => {
+                    setQuizSearchQuery(e.target.value);
+                    setCurrentQuizPage(1);
+                  }}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                />
+              </div>
+
+              <select
+                value={quizCategoryFilter}
+                onChange={e => {
+                  setQuizCategoryFilter(e.target.value);
+                  setCurrentQuizPage(1);
+                }}
+                className="text-xs py-1.5 px-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] cursor-pointer"
               >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-[#2368f5]">
-                      {getLocalizedArea(quiz.category, language)}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => {
-                          setEditingQuiz(quiz);
-                          setIsQuizModalOpen(true);
-                        }}
-                        className="text-slate-400 hover:text-[#2368f5] p-1.5 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
-                        title={t.recruiter.quizzes.editBtn}
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`${t.recruiter.quizzes.confirmDelete} "${quiz.title}"?`)) {
-                            deleteQuiz(quiz.id);
-                          }
-                        }}
-                        className="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                        title="Delete quiz"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                <option value="all">{t.recruiter.quizzes.filterAreaAll}</option>
+                {uniqueQuizCategories.map(cat => (
+                  <option key={cat} value={cat}>
+                    {getLocalizedArea(cat, language)}
+                  </option>
+                ))}
+              </select>
+
+              {(quizSearchQuery !== '' || quizCategoryFilter !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuizSearchQuery('');
+                    setQuizCategoryFilter('all');
+                    setCurrentQuizPage(1);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>{t.recruiter.pipeline.clearFilters}</span>
+                </button>
+              )}
+            </div>
+
+            <span className="text-xs text-slate-500 font-semibold self-end md:self-auto px-1">
+              {filteredQuizzes.length} {t.recruiter.quizzes.cardQuestions.split(' ')[0]} {language === 'es' ? 'bancos' : 'banks'}
+            </span>
+          </div>
+
+          {/* Quizzes Grid */}
+          {paginatedQuizzes.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+              <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-slate-700">
+                {t.recruiter.quizzes.noQuizzes}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                {language === 'es'
+                  ? 'Intenta ajustar los filtros de búsqueda o categoría.'
+                  : 'Try adjusting your search or category filters.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedQuizzes.map(quiz => {
+                const isExpanded = Boolean(expandedQuizIds[quiz.id]);
+                const classifications = quiz.supportedClassifications || [];
+                const displayedClassifications = isExpanded
+                  ? classifications
+                  : classifications.slice(0, 3);
+                const remainingCount = classifications.length - 3;
+
+                return (
+                  <div
+                    key={quiz.id}
+                    className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between hover:border-[#2368f5] transition-all"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-[#2368f5] truncate max-w-[200px]">
+                          {getLocalizedArea(quiz.category, language)}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => {
+                              setEditingQuiz(quiz);
+                              setIsQuizModalOpen(true);
+                            }}
+                            className="text-slate-400 hover:text-[#2368f5] p-1.5 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                            title={t.recruiter.quizzes.editBtn}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `${t.recruiter.quizzes.confirmDelete} "${quiz.title}"?`
+                                )
+                              ) {
+                                deleteQuiz(quiz.id);
+                              }
+                            }}
+                            className="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Delete quiz"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <h3 className="font-bold text-sm text-slate-900 leading-snug">
+                        {getLocalizedArea(quiz.title, language)}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                        {quiz.description}
+                      </p>
+
+                      {/* Supported County of Orange Classifications */}
+                      {classifications.length > 0 && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-100">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                              <Briefcase className="w-3 h-3 text-[#2368f5]" />
+                              <span>{t.recruiter.quizzes.supportedClassifications}</span>
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-semibold">
+                              {classifications.length}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {displayedClassifications.map((item, idx) => (
+                              <span
+                                key={idx}
+                                className="text-[10px] px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 font-medium border border-slate-200 truncate max-w-full"
+                                title={item}
+                              >
+                                {item}
+                              </span>
+                            ))}
+                            {classifications.length > 3 && (
+                              <button
+                                type="button"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  toggleQuizExpanded(quiz.id);
+                                }}
+                                className="text-[10px] font-bold text-[#2368f5] hover:underline px-1 py-0.5 cursor-pointer"
+                              >
+                                {isExpanded
+                                  ? t.recruiter.quizzes.showLessClassifications
+                                  : t.recruiter.quizzes.showMoreClassifications.replace(
+                                      '{count}',
+                                      String(remainingCount)
+                                    )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex items-center gap-3 text-xs text-slate-600 font-semibold">
+                        <span>
+                          {quiz.questions.length} {t.recruiter.quizzes.cardQuestions}
+                        </span>
+                        <span>•</span>
+                        <span>
+                          {quiz.timeLimitMinutes} {t.recruiter.quizzes.cardTime}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <span className="text-[11px] text-slate-400 truncate">
+                        {t.recruiter.quizzes.createdLabel} {quiz.createdAt}
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => {
+                            setEditingQuiz(quiz);
+                            setIsQuizModalOpen(true);
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <Edit3 className="w-3 h-3 text-[#2368f5]" />
+                          <span>{t.recruiter.quizzes.editBtn}</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAssigningQuizId(quiz.id);
+                            setIsAssignModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-[#10243e] text-white text-xs font-bold hover:bg-[#1c3553] transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <SendHorizontal className="w-3 h-3" />
+                          <span>{t.recruiter.quizzes.assignBtn}</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          )}
 
-                  <h3 className="font-bold text-sm text-slate-900">{getLocalizedArea(quiz.title, language)}</h3>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                    {quiz.description}
-                  </p>
-
-                  <div className="mt-4 flex items-center gap-3 text-xs text-slate-600 font-semibold">
-                    <span>{quiz.questions.length} {t.recruiter.quizzes.cardQuestions}</span>
-                    <span>•</span>
-                    <span>{quiz.timeLimitMinutes} {t.recruiter.quizzes.cardTime}</span>
-                  </div>
-                </div>
-
-                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-slate-400">{t.recruiter.quizzes.createdLabel} {quiz.createdAt}</span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => {
-                        setEditingQuiz(quiz);
-                        setIsQuizModalOpen(true);
-                      }}
-                      className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1"
-                    >
-                      <Edit3 className="w-3 h-3 text-[#2368f5]" />
-                      <span>{t.recruiter.quizzes.editBtn}</span>
-                    </button>
-                    <button
-                      onClick={() => setIsAssignModalOpen(true)}
-                      className="px-3 py-1.5 rounded-xl bg-[#10243e] text-white text-xs font-bold hover:bg-[#1c3553] transition-colors cursor-pointer flex items-center gap-1"
-                    >
-                      <SendHorizontal className="w-3 h-3" />
-                      <span>{t.recruiter.quizzes.assignBtn}</span>
-                    </button>
-                  </div>
-                </div>
+          {/* Quizzes Pagination Controls */}
+          {totalQuizItems > 0 && (
+            <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-600">
+                <span className="font-semibold">{t.recruiter.quizzes.pageSizeLabel}</span>
+                <select
+                  value={quizPageSize}
+                  onChange={e => {
+                    setQuizPageSize(Number(e.target.value));
+                    setCurrentQuizPage(1);
+                  }}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2368f5] cursor-pointer"
+                >
+                  <option value={5}>5 {t.recruiter.quizzes.perPage}</option>
+                  <option value={10}>10 {t.recruiter.quizzes.perPage}</option>
+                  <option value={15}>15 {t.recruiter.quizzes.perPage}</option>
+                  <option value={20}>20 {t.recruiter.quizzes.perPage}</option>
+                  <option value={50}>50 {t.recruiter.quizzes.perPage}</option>
+                </select>
+                <span className="text-slate-400 ml-1">
+                  {t.recruiter.quizzes.showingPage
+                    .replace('{from}', String(quizStartIndex + 1))
+                    .replace('{to}', String(Math.min(quizStartIndex + quizPageSize, totalQuizItems)))
+                    .replace('{total}', String(totalQuizItems))}
+                </span>
               </div>
-            ))}
-          </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentQuizPage(p => Math.max(1, p - 1))}
+                  disabled={validQuizCurrentPage <= 1}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>{t.recruiter.quizzes.prevPage}</span>
+                </button>
+                <span className="px-2 text-xs font-bold text-slate-700">
+                  {validQuizCurrentPage} / {totalQuizPages}
+                </span>
+                <button
+                  onClick={() => setCurrentQuizPage(p => Math.min(totalQuizPages, p + 1))}
+                  disabled={validQuizCurrentPage >= totalQuizPages}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                >
+                  <span>{t.recruiter.quizzes.nextPage}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -807,13 +1036,14 @@ export const RecruiterDashboard: React.FC = () => {
                           </span>
                         </div>
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border inline-flex items-center gap-1 ${
                             isFemaleCand
                               ? 'bg-purple-100/60 text-purple-800 border-purple-200'
                               : 'bg-blue-100/60 text-blue-800 border-blue-200'
                           }`}
                         >
-                          {isFemaleCand ? (language === 'es' ? '👩 Mujer' : '👩 Female') : (language === 'es' ? '👨 Hombre' : '👨 Male')}
+                          <User className="w-2.5 h-2.5" />
+                          <span>{isFemaleCand ? (language === 'es' ? 'Mujer' : 'Female') : (language === 'es' ? 'Hombre' : 'Male')}</span>
                         </span>
                       </button>
 
@@ -961,7 +1191,11 @@ export const RecruiterDashboard: React.FC = () => {
 
       <AssignQuizModal
         isOpen={isAssignModalOpen}
-        onClose={() => setIsAssignModalOpen(false)}
+        defaultQuizId={assigningQuizId}
+        onClose={() => {
+          setIsAssignModalOpen(false);
+          setAssigningQuizId(undefined);
+        }}
       />
 
       <ResultsAuditModal

@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Quiz } from '../types';
+import { orangeCountyQuizzes } from '../data/orangeCountyData';
 
 export const quizService = {
   async getAll(): Promise<Quiz[]> {
@@ -13,22 +14,32 @@ export const quizService = {
       throw error;
     }
 
-    return (quizzes || []).map((q: any) => ({
-      id: q.id,
-      title: q.title,
-      category: q.category,
-      description: q.description || '',
-      timeLimitMinutes: q.time_limit_minutes || 20,
-      createdAt: q.created_at ? q.created_at.split('T')[0] : '',
-      questions: (q.questions || []).map((quest: any) => ({
-        id: quest.id,
-        text: quest.text,
-        categoryTag: quest.category_tag || '',
-        explanation: quest.explanation || '',
-        options: quest.options || [],
-        correctOptionIds: quest.correct_option_ids || [],
-      })),
-    }));
+    return (quizzes || []).map((q: any) => {
+      const matchedOcQuiz = orangeCountyQuizzes.find(
+        oq =>
+          oq.title.toLowerCase().trim() === (q.title || '').toLowerCase().trim() ||
+          oq.category.toLowerCase().trim() === (q.category || '').toLowerCase().trim()
+      );
+
+      return {
+        id: q.id,
+        title: q.title,
+        category: q.category,
+        description: q.description || '',
+        timeLimitMinutes: q.time_limit_minutes || 20,
+        createdAt: q.created_at ? q.created_at.split('T')[0] : '',
+        supportedClassifications:
+          q.supported_classifications || matchedOcQuiz?.supportedClassifications || [],
+        questions: (q.questions || []).map((quest: any) => ({
+          id: quest.id,
+          text: quest.text,
+          categoryTag: quest.category_tag || '',
+          explanation: quest.explanation || '',
+          options: quest.options || [],
+          correctOptionIds: quest.correct_option_ids || [],
+        })),
+      };
+    });
   },
 
   async create(quizData: Omit<Quiz, 'id' | 'createdAt'>): Promise<Quiz> {

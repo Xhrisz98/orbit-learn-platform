@@ -1,6 +1,8 @@
 import type { Quiz, Candidate, AssessmentAssignment } from '../types';
+import { orangeCountyQuizzes } from './orangeCountyData';
 
 export const initialQuizzes: Quiz[] = [
+  ...orangeCountyQuizzes,
   {
     id: 'quiz-trades-1',
     title: 'Industrial Electrician & Trade Systems Bank',

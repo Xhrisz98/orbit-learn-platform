@@ -89,6 +89,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setLoading(true);
         // Auto-seed if database tables are currently empty
         await seedService.seedIfEmpty();
+        // Sync County of Orange standardized banks if missing
+        await seedService.syncOrangeCountyBanks();
 
         const [remoteQuizzes, remoteCandidates, remoteAssignments, remoteAreas] = await Promise.all([
           quizService.getAll(),
@@ -130,7 +132,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         'postgres_changes',
         { event: '*', schema: 'public', table: 'assessment_assignments' },
         async (payload) => {
-          console.log('⚡ [Realtime] Cambio detectado en evaluaciones:', payload.eventType);
+          console.log('[Realtime] Assessment change detected:', payload.eventType);
           try {
             const refreshed = await assignmentService.getAll();
             setAssignments(refreshed);
@@ -165,7 +167,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('🟢 [Realtime] Canal conectado en vivo a Supabase');
+          console.log('[Realtime] Live channel connected to Supabase');
         }
       });
 
