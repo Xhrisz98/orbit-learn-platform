@@ -6,8 +6,12 @@ import {
   Clock,
   CheckCircle2,
   PlayCircle,
+  Briefcase,
+  Mars,
+  Venus,
 } from 'lucide-react';
 import { getLocalizedArea } from '../../utils/areaLocalization';
+import { resolveCandidateGender, getCandidateInitials } from '../../utils/genderHelper';
 
 export const CandidatePortal: React.FC = () => {
   const {
@@ -27,28 +31,53 @@ export const CandidatePortal: React.FC = () => {
   // Get assignments for current candidate
   const candidateAssignments = assignments.filter(a => a.candidateId === currentCandidate?.id);
 
+  const isFemale = currentCandidate ? resolveCandidateGender(currentCandidate) === 'female' : false;
+  const initial = currentCandidate ? getCandidateInitials(currentCandidate.name) : 'C';
+
   return (
     <div className="space-y-6">
       {/* Candidate Profile Header */}
       <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <img
-            src={currentCandidate.avatar}
-            alt={currentCandidate.name}
-            className="w-16 h-16 rounded-2xl object-cover ring-2 ring-blue-200 shadow-xs shrink-0"
-          />
+          <div className="relative shrink-0">
+            <div
+              className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl shadow-xs border ${
+                isFemale
+                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                  : 'bg-blue-50 text-blue-700 border-blue-200'
+              }`}
+            >
+              <span>{initial}</span>
+            </div>
+            <div
+              className={`absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border shadow-xs ${
+                isFemale
+                  ? 'bg-purple-100 text-purple-700 border-purple-300'
+                  : 'bg-blue-100 text-blue-700 border-blue-300'
+              }`}
+              title={isFemale ? (language === 'es' ? 'Femenino' : 'Female') : (language === 'es' ? 'Masculino' : 'Male')}
+            >
+              {isFemale ? <Venus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <Mars className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+            </div>
+          </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-[#2368f5]">
                 {t.candidate.portalBadge}
               </span>
-              <span className="text-xs text-[#60738a]">• Candidate ID: {currentCandidate.id}</span>
+              {currentCandidate?.area && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                  <Briefcase className="w-2.5 h-2.5 text-[#2368f5]" />
+                  <span>{getLocalizedArea(currentCandidate.area, language)}</span>
+                </span>
+              )}
+              <span className="text-xs text-[#60738a]">• Candidate ID: {currentCandidate?.id ? currentCandidate.id.substring(0, 8) : ''}...</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-[#10243e] tracking-tight">
-              {currentCandidate.name}
+              {currentCandidate?.name}
             </h1>
             <p className="text-xs text-[#2368f5] font-semibold mt-0.5">
-              {currentCandidate.roleApplied} • <span className="text-[#60738a] font-normal">{currentCandidate.email}</span>
+              {currentCandidate?.roleApplied} • <span className="text-[#60738a] font-normal">{currentCandidate?.email}</span>
             </p>
           </div>
         </div>

@@ -28,6 +28,7 @@ import {
   Briefcase,
   Mars,
   Venus,
+  ArrowUpRight,
 } from 'lucide-react';
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
@@ -846,7 +847,7 @@ export const RecruiterDashboard: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {paginatedQuizzes.map(quiz => {
                 const isExpanded = Boolean(expandedQuizIds[quiz.id]);
                 const classifications = quiz.supportedClassifications || [];
@@ -1133,7 +1134,7 @@ export const RecruiterDashboard: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {paginatedCandidates.map(cand => {
                 const candAssignments = assignments.filter(a => a.candidateId === cand.id);
                 const completed = candAssignments.filter(a => a.status === 'completed');
@@ -1144,20 +1145,16 @@ export const RecruiterDashboard: React.FC = () => {
                 return (
                   <div
                     key={cand.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between hover:border-[#2368f5] transition-all"
+                    className="bg-white rounded-2xl border border-slate-200/80 hover:border-[#2368f5] p-4 sm:p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group"
                   >
                     <div>
-                      <div className="flex items-start justify-between">
-                        {/* Stylized Non-Image Gender Avatar with single initial and Mars/Venus symbol */}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedProfileCandidate(cand)}
-                          className="flex items-center gap-2.5 text-left cursor-pointer group"
-                          title={t.recruiter.pipeline.viewCandidateProfile}
-                        >
+                      {/* Card Header: Avatar with single initial & single gender emblem + Profile info + Delete action */}
+                      <div className="flex items-start justify-between gap-2.5">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {/* Single initial Avatar with subtle corner Mars / Venus indicator */}
                           <div className="relative shrink-0">
                             <div
-                              className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-2xs border transition-transform group-hover:scale-105 ${
+                              className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-base shadow-2xs border transition-transform group-hover:scale-105 ${
                                 isFemaleCand
                                   ? 'bg-purple-50 text-purple-700 border-purple-200'
                                   : 'bg-blue-50 text-blue-700 border-blue-200'
@@ -1166,7 +1163,7 @@ export const RecruiterDashboard: React.FC = () => {
                               <span>{candInitials}</span>
                             </div>
                             <div
-                              className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border shadow-2xs ${
+                              className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border shadow-2xs ${
                                 isFemaleCand
                                   ? 'bg-purple-100 text-purple-700 border-purple-300'
                                   : 'bg-blue-100 text-blue-700 border-blue-300'
@@ -1181,91 +1178,87 @@ export const RecruiterDashboard: React.FC = () => {
                                   : 'Male'
                               }
                             >
-                              {isFemaleCand ? <Venus className="w-3 h-3" /> : <Mars className="w-3 h-3" />}
+                              {isFemaleCand ? <Venus className="w-2.5 h-2.5" /> : <Mars className="w-2.5 h-2.5" />}
                             </div>
                           </div>
 
-                          <span
-                            className={`p-1.5 rounded-full border inline-flex items-center justify-center shadow-2xs ${
-                              isFemaleCand
-                                ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                : 'bg-blue-50 text-blue-700 border-blue-200'
-                            }`}
-                            title={
-                              isFemaleCand
-                                ? language === 'es'
-                                  ? 'Femenino'
-                                  : 'Female'
-                                : language === 'es'
-                                  ? 'Masculino'
-                                  : 'Male'
-                            }
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProfileCandidate(cand)}
+                            className="text-left min-w-0 flex-1 cursor-pointer group/name"
+                            title={t.recruiter.pipeline.viewCandidateProfile}
                           >
-                            {isFemaleCand ? (
-                              <Venus className="w-3.5 h-3.5" />
-                            ) : (
-                              <Mars className="w-3.5 h-3.5" />
-                            )}
-                          </span>
-                        </button>
+                            <h3 className="font-bold text-sm text-slate-900 group-hover/name:text-[#2368f5] group-hover/name:underline flex items-center gap-1 transition-colors truncate">
+                              <span className="truncate">{cand.name}</span>
+                              <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover/name:text-[#2368f5] shrink-0" />
+                            </h3>
+                            <p className="text-[11px] text-slate-400 truncate mt-0.5">{cand.email}</p>
+                          </button>
+                        </div>
 
                         <button
                           onClick={() => deleteCandidate(cand.id)}
-                          className="text-slate-300 hover:text-red-500 p-1 cursor-pointer"
+                          className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
                           title="Delete candidate"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setSelectedProfileCandidate(cand)}
-                        className="text-left w-full mt-3 group cursor-pointer"
-                        title={t.recruiter.pipeline.viewCandidateProfile}
-                      >
-                        <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#2368f5] group-hover:underline flex items-center justify-between">
-                          <span>{cand.name}</span>
-                          <span className="text-xs text-slate-400 group-hover:text-[#2368f5]">↗</span>
-                        </h3>
-                        <p className="text-xs text-[#2368f5] font-semibold">{cand.roleApplied}</p>
+                      {/* Area & Role Tags */}
+                      <div className="mt-3.5 space-y-1">
                         {cand.area && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-full inline-block mt-1">
-                            {getLocalizedArea(cand.area, language)}
-                          </span>
+                          <div className="flex">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-[#2368f5] border border-blue-100 truncate max-w-full">
+                              <Briefcase className="w-2.5 h-2.5 shrink-0" />
+                              <span className="truncate">{getLocalizedArea(cand.area, language)}</span>
+                            </span>
+                          </div>
                         )}
-                        <p className="text-[11px] text-slate-400 mt-0.5 truncate">{cand.email}</p>
-                      </button>
+                        <p className="text-xs font-semibold text-slate-700 truncate" title={cand.roleApplied}>
+                          {cand.roleApplied}
+                        </p>
+                      </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1">
-                        <div className="flex justify-between">
-                          <span>{t.recruiter.candidates.testsAssigned}</span>
-                          <span className="font-bold">{candAssignments.length}</span>
+                      {/* Micro-stats: Tests Assigned vs Tests Completed */}
+                      <div className="mt-3.5 grid grid-cols-2 gap-2 text-center">
+                        <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                          <span className="text-[10px] font-medium text-slate-500 block truncate">
+                            {t.recruiter.candidates.testsAssigned}
+                          </span>
+                          <span className="text-sm font-black text-slate-800 block mt-0.5">
+                            {candAssignments.length}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>{t.recruiter.candidates.testsCompleted}</span>
-                          <span className="font-bold text-[#22a06b]">{completed.length}</span>
+                        <div className="p-2 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                          <span className="text-[10px] font-medium text-emerald-700 block truncate">
+                            {t.recruiter.candidates.testsCompleted}
+                          </span>
+                          <span className="text-sm font-black text-emerald-600 block mt-0.5">
+                            {completed.length}
+                          </span>
                         </div>
                       </div>
                     </div>
 
+                    {/* Bottom Action Buttons */}
                     <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
                       <button
                         onClick={() => setSelectedProfileCandidate(cand)}
-                        className="flex-1 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                        className="flex-1 py-2 px-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        <Eye className="w-3 h-3" />
-                        <span>{language === 'es' ? 'Ver Ficha' : 'Profile'}</span>
+                        <Eye className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{language === 'es' ? 'Ver Ficha' : 'Profile'}</span>
                       </button>
 
                       <button
                         onClick={() => {
                           setIsAssignModalOpen(true);
                         }}
-                        className="flex-1 py-2 bg-blue-50 text-[#2368f5] rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                        className="flex-1 py-2 px-2.5 bg-blue-50 text-[#2368f5] rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5 border border-blue-200/50"
                       >
-                        <SendHorizontal className="w-3 h-3" />
-                        <span>{t.recruiter.candidates.assignQuizBtn}</span>
+                        <SendHorizontal className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{t.recruiter.candidates.assignQuizBtn}</span>
                       </button>
                     </div>
                   </div>

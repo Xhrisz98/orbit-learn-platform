@@ -263,33 +263,33 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-800 mb-1">
-                {t.recruiter.createQuizModal.fieldCategory} *
-              </label>
-              <div className="flex gap-2">
-                <select
-                  required
-                  value={category}
-                  onChange={e => setCategory(e.target.value)}
-                  className="flex-1 text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5] bg-white font-medium"
-                >
-                  <option value="">{t.recruiter.createQuizModal.selectCategoryPlaceholder}</option>
-                  {areas.map(a => (
-                    <option key={a.id} value={a.name}>
-                      {getLocalizedArea(a.name, language)}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                <label className="text-xs font-semibold text-slate-800">
+                  {t.recruiter.createQuizModal.fieldCategory} *
+                </label>
                 <button
                   type="button"
                   onClick={() => setShowNewAreaModal(true)}
-                  className="px-2.5 py-2 rounded-xl bg-blue-50 text-[#2368f5] hover:bg-blue-100 text-xs font-bold transition-colors border border-blue-200 shrink-0 cursor-pointer flex items-center gap-1"
+                  className="text-xs font-bold text-[#2368f5] hover:text-[#144cc0] flex items-center gap-1 cursor-pointer transition-colors py-0.5 px-2 rounded-lg hover:bg-blue-50 shrink-0"
                   title={t.recruiter.createQuizModal.newAreaBtn}
                 >
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t.recruiter.createQuizModal.newAreaBtn}</span>
+                  <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{t.recruiter.createQuizModal.newAreaBtn}</span>
                 </button>
               </div>
+              <select
+                required
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5] bg-white font-medium"
+              >
+                <option value="">{t.recruiter.createQuizModal.selectCategoryPlaceholder}</option>
+                {areas.map(a => (
+                  <option key={a.id} value={a.name}>
+                    {getLocalizedArea(a.name, language)}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

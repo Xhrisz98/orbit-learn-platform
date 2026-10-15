@@ -75,16 +75,6 @@ export const CandidateProfileModal: React.FC<Props> = ({
 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className={`w-6 h-6 rounded-full border inline-flex items-center justify-center shadow-2xs ${
-                    isFemale
-                      ? 'bg-purple-50 text-purple-700 border-purple-200'
-                      : 'bg-blue-50 text-blue-700 border-blue-200'
-                  }`}
-                  title={isFemale ? (isEs ? 'Femenino' : 'Female') : (isEs ? 'Masculino' : 'Male')}
-                >
-                  {isFemale ? <Venus className="w-3.5 h-3.5" /> : <Mars className="w-3.5 h-3.5" />}
-                </span>
                 {candidate.area && (
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
                     {getLocalizedArea(candidate.area, language)}
