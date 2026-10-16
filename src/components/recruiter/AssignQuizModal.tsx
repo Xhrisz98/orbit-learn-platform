@@ -403,8 +403,8 @@ export const AssignQuizModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-4xl w-full p-5 sm:p-7 border border-slate-200 shadow-2xl my-6 max-h-[94vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-6 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-6 border border-slate-200 shadow-2xl my-auto max-h-[92vh] flex flex-col">
         {assignedSuccess ? (
           <div className="text-center py-12 space-y-4 my-auto">
             <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-md">
@@ -425,7 +425,7 @@ export const AssignQuizModal: React.FC<Props> = ({
             {/* Header */}
             <div className="flex items-start justify-between pb-3 border-b border-slate-200 shrink-0">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                <h2 className="text-base sm:text-xl font-bold text-slate-900">
                   {t.recruiter.assignModal.title}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -434,7 +434,7 @@ export const AssignQuizModal: React.FC<Props> = ({
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -675,10 +675,10 @@ export const AssignQuizModal: React.FC<Props> = ({
                         type="button"
                         onClick={handleAddBankToSuite}
                         disabled={!selectedQuizId}
-                        className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-full py-2.5 px-3 min-h-[40px] rounded-xl bg-[#2368f5] hover:bg-[#144cc0] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        <PlusCircle className="w-4 h-4" />
-                        <span>{t.recruiter.assignModal.addBankToSuiteBtn}</span>
+                        <PlusCircle className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{t.recruiter.assignModal.addBankToSuiteBtn}</span>
                       </button>
                     </div>
                   </div>
@@ -795,13 +795,13 @@ export const AssignQuizModal: React.FC<Props> = ({
                                 type="button"
                                 onClick={e => handleRemoveBank(idx, e)}
                                 title={t.recruiter.assignModal.removeBankTooltip}
-                                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0 min-w-[28px] min-h-[28px] flex items-center justify-center"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
 
-                            <div className="flex items-center justify-between gap-2 pt-2.5 mt-2 border-t border-slate-200/60 text-[11px]">
+                            <div className="flex flex-wrap items-center justify-between gap-1.5 pt-2 mt-2 border-t border-slate-200/60 text-[11px]">
                               {/* Difficulty Badge */}
                               {q?.difficulty === 1 ? (
                                 <span className="text-[10px] font-semibold text-emerald-700 flex items-center gap-1">
@@ -854,7 +854,7 @@ export const AssignQuizModal: React.FC<Props> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 max-w-full scroll-smooth scrollbar-thin">
                       {configuredBanks.map((b, idx) => {
                         const q = quizzes.find(item => item.id === b.quizId);
                         const isActive = idx === activeBankIndex;
@@ -863,7 +863,7 @@ export const AssignQuizModal: React.FC<Props> = ({
                             key={`tab-${b.quizId}-${idx}`}
                             type="button"
                             onClick={() => setActiveBankIndex(idx)}
-                            className={`text-xs font-bold px-3 py-1.5 rounded-xl border whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                            className={`text-xs font-bold px-3 py-1.5 min-h-[34px] rounded-xl border whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                               isActive
                                 ? 'bg-[#2368f5] text-white border-[#2368f5] shadow-xs'
                                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -1068,11 +1068,11 @@ export const AssignQuizModal: React.FC<Props> = ({
               )}
 
               {/* Bottom Actions */}
-              <div className="flex gap-2 pt-3 border-t border-slate-200">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+                  className="w-full sm:flex-1 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
                 >
                   {t.common.cancel}
                 </button>
@@ -1085,10 +1085,10 @@ export const AssignQuizModal: React.FC<Props> = ({
                     totalQuestions === 0 ||
                     isSubmitting
                   }
-                  className="flex-2 py-2.5 px-4 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] disabled:opacity-40 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full sm:flex-2 py-3 sm:py-2.5 px-4 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] disabled:opacity-40 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  <SendHorizontal className="w-3.5 h-3.5" />
-                  <span>
+                  <SendHorizontal className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">
                     {isSubmitting
                       ? t.common.loading
                       : t.recruiter.assignModal.confirmMultiBtn

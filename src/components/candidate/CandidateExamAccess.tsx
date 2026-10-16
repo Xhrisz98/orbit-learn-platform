@@ -312,11 +312,11 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
           </div>
 
           {/* Scorecard Summary Box */}
-          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center space-y-2">
+          <div className="bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200 text-center space-y-2">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               {t.candidateAccess.screenVoucher.scoreCardTitle}
             </p>
-            <div className="text-5xl font-black font-mono tabular-nums tracking-tight text-[#2368f5]">
+            <div className="text-4xl sm:text-5xl font-black font-mono tabular-nums tracking-tight text-[#2368f5]">
               {currentAssignment.score ?? 0}%
             </div>
             <div className="flex items-center justify-center gap-3 text-xs font-semibold text-slate-700 pt-1">
@@ -333,7 +333,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
           </div>
 
           {/* Candidate & Assessment Metadata Receipt */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2.5 text-xs">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-2.5 text-xs">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 font-bold text-slate-800">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -344,7 +344,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600">
               <div>
                 <span className="font-semibold text-slate-400 block text-[11px]">
                   {t.candidateAccess.screenVoucher.candidateName}
@@ -355,7 +355,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
                 <span className="font-semibold text-slate-400 block text-[11px]">
                   {t.candidateAccess.screenVoucher.candidateEmail}
                 </span>
-                <span className="font-medium text-slate-700">{currentAssignment.candidateEmail}</span>
+                <span className="font-medium text-slate-700 break-all">{currentAssignment.candidateEmail}</span>
               </div>
               <div>
                 <span className="font-semibold text-slate-400 block text-[11px]">
@@ -383,7 +383,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
           <button
             type="button"
             onClick={handleExitToLogin}
-            className="w-full py-3.5 bg-[#10243e] hover:bg-[#1a385c] text-white text-xs font-bold rounded-2xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 min-h-[46px] bg-[#10243e] hover:bg-[#1a385c] text-white text-xs sm:text-sm font-bold rounded-2xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>{t.candidateAccess.screenVoucher.exitBtn}</span>

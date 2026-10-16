@@ -246,12 +246,12 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
   const availableClassifications = currentAreaObj?.classifications || [];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-3xl w-full p-5 sm:p-7 border border-slate-200 shadow-2xl my-8 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-6 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-3xl w-full p-4 sm:p-7 border border-slate-200 shadow-2xl my-auto max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-slate-200 shrink-0">
+        <div className="flex items-start justify-between pb-3 sm:pb-4 border-b border-slate-200 shrink-0">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+            <h2 className="text-base sm:text-xl font-bold text-slate-900">
               {quizToEdit ? t.recruiter.createQuizModal.editTitle : t.recruiter.createQuizModal.title}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -260,7 +260,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -337,7 +337,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
                 <button
                   type="button"
                   onClick={() => setDifficulty(1)}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 min-h-[42px] rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                     difficulty === 1
                       ? 'bg-emerald-50 border-emerald-500 text-emerald-800 ring-2 ring-emerald-500/20 shadow-xs'
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
@@ -349,7 +349,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
                 <button
                   type="button"
                   onClick={() => setDifficulty(2)}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 min-h-[42px] rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                     difficulty === 2
                       ? 'bg-blue-50 border-[#2368f5] text-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
@@ -361,7 +361,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
                 <button
                   type="button"
                   onClick={() => setDifficulty(3)}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 min-h-[42px] rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                     difficulty === 3
                       ? 'bg-purple-50 border-purple-500 text-purple-800 ring-2 ring-purple-500/20 shadow-xs'
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
@@ -424,7 +424,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
                           key={role}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-[#2368f5] border border-blue-200 shadow-2xs"
                         >
-                          <span className="truncate max-w-xs">{role}</span>
+                          <span className="truncate max-w-[200px] sm:max-w-xs">{role}</span>
                           <button
                             type="button"
                             onClick={() => setSupportedClassifications(prev => prev.filter(r => r !== role))}
@@ -479,7 +479,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
               </div>
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold text-sm text-slate-900">
                   {t.recruiter.createQuizModal.questionsTitle} ({questions.length})
@@ -489,21 +489,21 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 {/* Download CSV Template */}
                 <button
                   type="button"
                   onClick={downloadCsvTemplate}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition-colors cursor-pointer"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition-colors cursor-pointer min-h-[36px]"
                   title={t.recruiter.createQuizModal.csvTemplateTooltip}
                 >
-                  <Download className="w-3.5 h-3.5 text-slate-600" />
+                  <Download className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                   <span>{t.recruiter.createQuizModal.csvTemplateBtn}</span>
                 </button>
 
                 {/* Import CSV */}
-                <label className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 transition-colors cursor-pointer">
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                <label className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 transition-colors cursor-pointer min-h-[36px]">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>{t.recruiter.createQuizModal.uploadCsvBtn}</span>
                   <input
                     type="file"
@@ -517,9 +517,9 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
                 <button
                   type="button"
                   onClick={handleAddQuestion}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-[#2368f5] text-xs font-bold rounded-xl hover:bg-blue-100 transition-colors cursor-pointer border border-blue-200"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 text-[#2368f5] text-xs font-bold rounded-xl hover:bg-blue-100 transition-colors cursor-pointer border border-blue-200 min-h-[36px]"
                 >
-                  <PlusCircle className="w-3.5 h-3.5" />
+                  <PlusCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.recruiter.createQuizModal.addQuestionBtn}</span>
                 </button>
               </div>

@@ -128,15 +128,15 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-slate-200 shadow-2xl max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-6 border border-slate-200 shadow-2xl max-h-[92vh] overflow-y-auto my-auto">
         <div className="flex items-start justify-between pb-3 border-b border-slate-200">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#2368f5] flex items-center justify-center shrink-0">
               {candidateToEdit ? <Edit3 className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900">
                 {candidateToEdit
                   ? t.recruiter.createCandidateModal.editTitle
                   : t.recruiter.createCandidateModal.title}
@@ -150,7 +150,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 cursor-pointer"
+            className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -235,17 +235,17 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
 
             {/* Badges with X */}
             {secondaryAreas.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5 mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="flex flex-wrap gap-1.5 mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-28 overflow-y-auto">
                 {secondaryAreas.map(secArea => (
                   <span
                     key={secArea}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs"
                   >
-                    <span>{getLocalizedArea(secArea, language)}</span>
+                    <span className="truncate max-w-[180px] sm:max-w-none">{getLocalizedArea(secArea, language)}</span>
                     <button
                       type="button"
                       onClick={() => setSecondaryAreas(prev => prev.filter(a => a !== secArea))}
-                      className="text-indigo-400 hover:text-indigo-700 cursor-pointer"
+                      className="text-indigo-400 hover:text-indigo-700 cursor-pointer shrink-0"
                       title="Remove department"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -310,41 +310,41 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
               <button
                 type="button"
                 onClick={() => setGender('male')}
-                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                className={`py-2.5 px-3 min-h-[44px] rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
                   gender === 'male'
                     ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-xs ring-1 ring-blue-500'
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <Mars className="w-4 h-4 text-blue-600" />
+                <Mars className="w-4 h-4 text-blue-600 shrink-0" />
                 <span>{t.recruiter.createCandidateModal.genderMale}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setGender('female')}
-                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                className={`py-2.5 px-3 min-h-[44px] rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
                   gender === 'female'
                     ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-xs ring-1 ring-purple-500'
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <Venus className="w-4 h-4 text-purple-600" />
+                <Venus className="w-4 h-4 text-purple-600 shrink-0" />
                 <span>{t.recruiter.createCandidateModal.genderFemale}</span>
               </button>
             </div>
           </div>
 
-          <div className="flex gap-2 pt-2 border-t border-slate-200">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2 border-t border-slate-200">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+              className="w-full sm:flex-1 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
             >
               {t.common.cancel}
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+              className="w-full sm:flex-1 py-2.5 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
             >
               {candidateToEdit ? <Edit3 className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
               <span>
