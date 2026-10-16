@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import type { AssessmentAssignment } from '../../types';
 import {
@@ -34,6 +34,45 @@ export const TakeAssessmentModal: React.FC<Props> = ({ assignment, onClose }) =>
 
   const quiz = quizzes.find(q => q.id === assignment.quizId);
   if (!quiz) return null;
+
+  // Duration in minutes and live countdown timer
+  const durationMinutes = assignment.durationMinutes || quiz.timeLimitMinutes || 20;
+  const initialSeconds = durationMinutes * 60;
+  const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
+  const [timeExpiredAlert, setTimeExpiredAlert] = useState(false);
+  const selectedAnswersRef = useRef(selectedAnswers);
+
+  useEffect(() => {
+    selectedAnswersRef.current = selectedAnswers;
+  }, [selectedAnswers]);
+
+  // Real-time countdown timer
+  useEffect(() => {
+    if (isSubmitted) return;
+
+    const interval = setInterval(() => {
+      setSecondsLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          // Automatically grade and submit when timer reaches 00:00
+          const result = submitAssessment(assignment.id, selectedAnswersRef.current);
+          setSubmitResult(result);
+          setIsSubmitted(true);
+          setTimeExpiredAlert(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isSubmitted, assignment.id]);
+
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+  const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const isCriticalTime = secondsLeft <= 60; // Less than 1 min left
+  const isWarningTime = secondsLeft <= 180 && !isCriticalTime; // Less than 3 mins left
 
   // Filter questions to only those picked by the recruiter
   const questionsToRender =
@@ -119,6 +158,14 @@ export const TakeAssessmentModal: React.FC<Props> = ({ assignment, onClose }) =>
               </div>
             </div>
 
+            {/* Time Expired Alert Banner */}
+            {timeExpiredAlert && (
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-semibold max-w-sm mx-auto flex items-center justify-center gap-2 shadow-2xs">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{t.candidate.assessmentModal.timeExpired}</span>
+              </div>
+            )}
+
             <p className="text-xs text-[#60738a] max-w-md mx-auto leading-relaxed">
               {submitResult.passed
                 ? t.candidate.resultModal.statusQualified
@@ -136,15 +183,14 @@ export const TakeAssessmentModal: React.FC<Props> = ({ assignment, onClose }) =>
           <>
             {/* Active Exam Header */}
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-[#dfe7f1]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#dfe7f1] flex-wrap gap-2">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-[#2368f5]">
                       {getLocalizedArea(quiz.category, language)}
                     </span>
-                    <span className="text-xs text-[#60738a] flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-[#60738a]" />
-                      <span>{quiz.timeLimitMinutes || 20} {t.candidate.assessmentModal.timeLimitBadge}</span>
+                    <span className="text-xs text-[#60738a] font-medium">
+                      {durationMinutes} {t.candidate.assessmentModal.timeLimitBadge}
                     </span>
                   </div>
                   <h2 className="text-base sm:text-lg font-bold text-[#10243e] mt-1">
@@ -152,12 +198,37 @@ export const TakeAssessmentModal: React.FC<Props> = ({ assignment, onClose }) =>
                   </h2>
                 </div>
 
-                <button
-                  onClick={onClose}
-                  className="text-slate-400 hover:text-slate-600 cursor-pointer p-1"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-3">
+                  {/* Live Countdown Timer Badge */}
+                  <div
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs font-mono tabular-nums ${
+                      isCriticalTime
+                        ? 'bg-rose-50 border-rose-300 text-rose-700 animate-pulse ring-2 ring-rose-500/20'
+                        : isWarningTime
+                        ? 'bg-amber-50 border-amber-300 text-amber-800'
+                        : 'bg-blue-50 border-blue-200 text-[#2368f5]'
+                    }`}
+                    title={t.candidate.assessmentModal.timeRemaining}
+                  >
+                    <Clock
+                      className={`w-3.5 h-3.5 shrink-0 ${
+                        isCriticalTime
+                          ? 'text-rose-600'
+                          : isWarningTime
+                          ? 'text-amber-600'
+                          : 'text-[#2368f5]'
+                      }`}
+                    />
+                    <span>{formattedTime}</span>
+                  </div>
+
+                  <button
+                    onClick={onClose}
+                    className="text-slate-400 hover:text-slate-600 cursor-pointer p-1 rounded-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Progress Bar */}

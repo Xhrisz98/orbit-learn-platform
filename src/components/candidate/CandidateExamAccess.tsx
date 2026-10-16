@@ -268,7 +268,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
                 {t.candidateAccess.screenLobby.timeLimit}
               </span>
               <span className="text-2xl font-black font-mono tabular-nums text-[#10243e]">
-                {currentQuiz?.timeLimitMinutes || 60} min
+                {currentAssignment.durationMinutes || currentQuiz?.timeLimitMinutes || 60} min
               </span>
             </div>
           </div>

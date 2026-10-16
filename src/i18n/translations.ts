@@ -390,6 +390,8 @@ export const translations = {
         prevBtn: 'Previous',
         nextBtn: 'Next',
         timeLimitBadge: 'min limit',
+        timeRemaining: 'Time Remaining',
+        timeExpired: 'Time has expired! Submitting answers automatically...',
       },
       resultModal: {
         title: 'SkillProof Verification Completed!',
@@ -792,6 +794,8 @@ export const translations = {
         prevBtn: 'Anterior',
         nextBtn: 'Siguiente',
         timeLimitBadge: 'min de límite',
+        timeRemaining: 'Tiempo Restante',
+        timeExpired: '¡El tiempo asignado ha finalizado! Evaluando y enviando respuestas automáticamente...',
       },
       resultModal: {
         title: '¡Verificación SkillProof Completada!',

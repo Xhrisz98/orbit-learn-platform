@@ -433,8 +433,8 @@ export const RecruiterDashboard: React.FC = () => {
                 </select>
 
                 {/* Date Range Inputs */}
-                <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2 py-1">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center gap-1.5 bg-white border border-slate-300 hover:border-[#2368f5] focus-within:border-[#2368f5] focus-within:ring-2 focus-within:ring-[#2368f5]/20 rounded-xl px-2.5 py-1.5 shadow-2xs transition-all">
+                  <Calendar className="w-3.5 h-3.5 text-[#2368f5] shrink-0" />
                   <input
                     type="date"
                     title={t.recruiter.pipeline.filterDateFrom}
@@ -443,9 +443,9 @@ export const RecruiterDashboard: React.FC = () => {
                       setDateFrom(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="text-xs text-slate-700 bg-transparent focus:outline-none cursor-pointer"
+                    className="text-xs font-medium text-slate-700 bg-transparent focus:outline-none cursor-pointer"
                   />
-                  <span className="text-slate-300">-</span>
+                  <span className="text-slate-300 font-bold">•</span>
                   <input
                     type="date"
                     title={t.recruiter.pipeline.filterDateTo}
@@ -454,7 +454,7 @@ export const RecruiterDashboard: React.FC = () => {
                       setDateTo(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="text-xs text-slate-700 bg-transparent focus:outline-none cursor-pointer"
+                    className="text-xs font-medium text-slate-700 bg-transparent focus:outline-none cursor-pointer"
                   />
                 </div>
 
