@@ -11,6 +11,8 @@ import {
   AlertCircle,
   Briefcase,
   Lock,
+  Award,
+  LogOut,
 } from 'lucide-react';
 
 interface Props {
@@ -72,8 +74,25 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
     setIsEmailVerified(true);
   };
 
-  const currentQuiz = activeAssignment ? quizzes.find(q => q.id === activeAssignment.quizId) : null;
-  const isCompleted = activeAssignment?.status === 'completed';
+  const handleExitToLogin = () => {
+    setActiveAssignment(null);
+    setIsEmailVerified(false);
+    setExamCode('');
+    setCandidateEmail('');
+    setErrorMessage(null);
+    if (window.history.pushState) {
+      const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+      window.history.pushState({ path: cleanUrl }, '', cleanUrl);
+    }
+  };
+
+  // Keep assignment updated with context state in real time
+  const matchedAssignment = activeAssignment
+    ? assignments.find(a => a.id.toLowerCase() === activeAssignment.id.toLowerCase())
+    : null;
+  const currentAssignment = matchedAssignment || activeAssignment;
+  const isCompleted = currentAssignment?.status === 'completed';
+  const currentQuiz = currentAssignment ? quizzes.find(q => q.id === currentAssignment.quizId) : null;
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
@@ -90,8 +109,8 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
         </p>
       </div>
 
-      {/* Screen 1: Request Exam Code if not in URL */}
-      {!activeAssignment && (
+      {/* Screen 1: Request Exam Code if not selected */}
+      {!currentAssignment && (
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2368f5] flex items-center justify-center shrink-0">
@@ -157,7 +176,7 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
       )}
 
       {/* Screen 2: Identity Verification with Candidate Email */}
-      {activeAssignment && !isEmailVerified && (
+      {currentAssignment && !isCompleted && !isEmailVerified && (
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl space-y-6">
           <div className="flex items-start justify-between pb-4 border-b border-slate-100">
             <div>
@@ -165,83 +184,60 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
                 {t.candidateAccess.screenEmail.invitationConfirmed}
               </span>
               <h2 className="font-extrabold text-lg sm:text-xl text-[#10243e] mt-2">
-                {getLocalizedArea(activeAssignment.quizTitle, language)}
+                {getLocalizedArea(currentAssignment.quizTitle, language)}
               </h2>
               <p className="text-xs text-[#60738a] mt-0.5">
                 {t.candidateAccess.screenEmail.registeredCandidate}{' '}
-                <span className="font-bold text-slate-800">{activeAssignment.candidateName}</span>
+                <span className="font-bold text-slate-800">{currentAssignment.candidateName}</span>
               </p>
             </div>
           </div>
 
-          {isCompleted ? (
-            <div className="py-6 text-center space-y-3">
-              <div className="w-14 h-14 bg-emerald-100 text-[#22a06b] rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-              <h3 className="font-bold text-base text-[#10243e]">
-                {t.candidateAccess.screenEmail.completedTitle}
-              </h3>
-              <p className="text-xs text-[#60738a] max-w-sm mx-auto">
-                {t.candidateAccess.screenEmail.completedDesc.replace(
-                  '{date}',
-                  activeAssignment.completedAt || t.candidateAccess.screenEmail.recently
-                )}
+          <form onSubmit={handleVerifyEmail} className="space-y-4">
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-[#60738a] space-y-1">
+              <p className="font-semibold text-slate-800">
+                {t.candidateAccess.screenEmail.verifyIdentityTitle}
               </p>
-              <div className="pt-4">
-                <span className="text-2xl font-black text-[#10243e]">{activeAssignment.score}%</span>
-                <span className="text-xs text-[#60738a] block mt-1">
-                  {t.candidateAccess.screenEmail.scoreObtained}
-                </span>
-              </div>
+              <p>
+                {t.candidateAccess.screenEmail.verifyIdentityDesc}
+              </p>
             </div>
-          ) : (
-            <form onSubmit={handleVerifyEmail} className="space-y-4">
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-[#60738a] space-y-1">
-                <p className="font-semibold text-slate-800">
-                  {t.candidateAccess.screenEmail.verifyIdentityTitle}
-                </p>
-                <p>
-                  {t.candidateAccess.screenEmail.verifyIdentityDesc}
-                </p>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                {t.candidateAccess.screenEmail.emailLabel}
+              </label>
+              <input
+                type="email"
+                required
+                placeholder={t.candidateAccess.screenEmail.emailPlaceholder}
+                value={candidateEmail}
+                onChange={e => setCandidateEmail(e.target.value)}
+                className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2368f5]/20 focus:border-[#2368f5]"
+                autoFocus
+              />
+            </div>
+
+            {errorMessage && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMessage}</span>
               </div>
+            )}
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                  {t.candidateAccess.screenEmail.emailLabel}
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder={t.candidateAccess.screenEmail.emailPlaceholder}
-                  value={candidateEmail}
-                  onChange={e => setCandidateEmail(e.target.value)}
-                  className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2368f5]/20 focus:border-[#2368f5]"
-                  autoFocus
-                />
-              </div>
-
-              {errorMessage && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-[#2368f5] hover:bg-[#144cc0] text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>{t.candidateAccess.screenEmail.unlockBtn}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </form>
-          )}
+            <button
+              type="submit"
+              className="w-full py-3 bg-[#2368f5] hover:bg-[#144cc0] text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>{t.candidateAccess.screenEmail.unlockBtn}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
         </div>
       )}
 
       {/* Screen 3: Test Lobby & Start */}
-      {activeAssignment && isEmailVerified && !isCompleted && (
+      {currentAssignment && !isCompleted && isEmailVerified && (
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
@@ -249,11 +245,11 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
                 {t.candidateAccess.screenLobby.identityVerified}
               </span>
               <h2 className="font-black text-xl text-[#10243e] mt-2">
-                {getLocalizedArea(activeAssignment.quizTitle, language)}
+                {getLocalizedArea(currentAssignment.quizTitle, language)}
               </h2>
               <p className="text-xs text-[#60738a] mt-0.5">
                 {t.candidateAccess.screenLobby.welcome}{' '}
-                <span className="font-bold text-slate-900">{activeAssignment.candidateName}</span> ({activeAssignment.candidateEmail})
+                <span className="font-bold text-slate-900">{currentAssignment.candidateName}</span> ({currentAssignment.candidateEmail})
               </p>
             </div>
           </div>
@@ -263,13 +259,17 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
               <span className="text-xs text-[#60738a] block mb-1">
                 {t.candidateAccess.screenLobby.assignedQuestions}
               </span>
-              <span className="text-2xl font-black text-[#10243e]">{activeAssignment.totalQuestions}</span>
+              <span className="text-2xl font-black font-mono tabular-nums text-[#10243e]">
+                {currentAssignment.totalQuestions}
+              </span>
             </div>
             <div className="p-4 rounded-2xl bg-[#f5f8fc] border border-slate-200 text-center">
               <span className="text-xs text-[#60738a] block mb-1">
                 {t.candidateAccess.screenLobby.timeLimit}
               </span>
-              <span className="text-2xl font-black text-[#10243e]">{currentQuiz?.timeLimitMinutes || 20} min</span>
+              <span className="text-2xl font-black font-mono tabular-nums text-[#10243e]">
+                {currentQuiz?.timeLimitMinutes || 60} min
+              </span>
             </div>
           </div>
 
@@ -295,10 +295,106 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
         </div>
       )}
 
+      {/* Screen 4: Assessment Completed Voucher / Comprobante Oficial */}
+      {currentAssignment && isCompleted && (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl space-y-6">
+          {/* Header with Emerald Badge */}
+          <div className="text-center space-y-2 pb-4 border-b border-slate-100">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
+              <Award className="w-9 h-9" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              {t.candidateAccess.screenVoucher.title}
+            </h2>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              {t.candidateAccess.screenVoucher.subtitle}
+            </p>
+          </div>
+
+          {/* Scorecard Summary Box */}
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center space-y-2">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {t.candidateAccess.screenVoucher.scoreCardTitle}
+            </p>
+            <div className="text-5xl font-black font-mono tabular-nums tracking-tight text-[#2368f5]">
+              {currentAssignment.score ?? 0}%
+            </div>
+            <div className="flex items-center justify-center gap-3 text-xs font-semibold text-slate-700 pt-1">
+              <span className="font-mono tabular-nums">
+                {t.candidateAccess.screenVoucher.hitsSummary}: {currentAssignment.correctAnswersCount ?? 0} / {currentAssignment.totalQuestions}
+              </span>
+            </div>
+            <div className="pt-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
+                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                <span>{t.candidateAccess.screenVoucher.statusBadge}</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Candidate & Assessment Metadata Receipt */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2.5 text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 font-bold text-slate-800">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>{t.candidateAccess.screenVoucher.candidateInfo}</span>
+              </span>
+              <span className="text-[11px] font-mono text-slate-400">
+                ID: {currentAssignment.id.substring(0, 13)}...
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600">
+              <div>
+                <span className="font-semibold text-slate-400 block text-[11px]">
+                  {t.candidateAccess.screenVoucher.candidateName}
+                </span>
+                <span className="font-bold text-slate-800">{currentAssignment.candidateName}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-400 block text-[11px]">
+                  {t.candidateAccess.screenVoucher.candidateEmail}
+                </span>
+                <span className="font-medium text-slate-700">{currentAssignment.candidateEmail}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-400 block text-[11px]">
+                  {t.candidateAccess.screenVoucher.roleApplied}
+                </span>
+                <span className="font-medium text-slate-700">{currentAssignment.roleApplied}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-400 block text-[11px]">
+                  {t.candidateAccess.screenVoucher.completedDate}
+                </span>
+                <span className="font-medium text-slate-700">
+                  {currentAssignment.completedAt || new Date().toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Instructions Notice */}
+          <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-blue-900 leading-relaxed">
+            {t.candidateAccess.screenVoucher.instructionsNotice}
+          </div>
+
+          {/* Main Exit / Return to Login Button */}
+          <button
+            type="button"
+            onClick={handleExitToLogin}
+            className="w-full py-3.5 bg-[#10243e] hover:bg-[#1a385c] text-white text-xs font-bold rounded-2xl transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t.candidateAccess.screenVoucher.exitBtn}</span>
+          </button>
+        </div>
+      )}
+
       {/* Assessment Taking Modal */}
       {isTestModalOpen && (
         <TakeAssessmentModal
-          assignment={activeAssignment}
+          assignment={currentAssignment}
           onClose={() => {
             setIsTestModalOpen(false);
           }}

@@ -19,7 +19,7 @@ import {
   Zap,
   Award,
   Info,
-  Sparkles,
+  Layers,
 } from 'lucide-react';
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
@@ -46,9 +46,9 @@ export const AssignQuizModal: React.FC<Props> = ({
 
   // Selections
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [selectedQuizId, setSelectedQuizId] = useState<string>('');
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
-  const [showAllBanks, setShowAllBanks] = useState(false);
 
   // Duration preset: 5, 15, or 30 mins
   const [durationPreset, setDurationPreset] = useState<5 | 15 | 30>(15);
@@ -65,6 +65,11 @@ export const AssignQuizModal: React.FC<Props> = ({
     new Set(candidates.map(c => c.roleApplied).filter(Boolean))
   ) as string[];
 
+  // All distinct quiz branches / categories
+  const availableBranches = Array.from(
+    new Set(quizzes.map(q => q.category).filter(Boolean))
+  );
+
   // Filtered candidate list based on Demand Filters
   const filteredCandidates = candidates.filter(c => {
     if (filterArea) {
@@ -80,12 +85,31 @@ export const AssignQuizModal: React.FC<Props> = ({
   const maxAllowedQuestions =
     durationPreset === 5 ? 5 : durationPreset === 15 ? 10 : Infinity;
 
+  // Single candidate detection
+  const isSingleCandidate = selectedCandidateIds.length === 1;
+  const singleCandidate = isSingleCandidate
+    ? candidates.find(c => c.id === selectedCandidateIds[0])
+    : null;
+
+  const candidateAssociatedAreas: string[] = singleCandidate
+    ? [singleCandidate.area, ...(singleCandidate.secondaryAreas || [])].filter(Boolean) as string[]
+    : [];
+
+  // Filter quizzes strictly by the selected branch (or all if empty)
+  const branchQuizzes = selectedBranch
+    ? quizzes.filter(
+        q => q.category.toLowerCase().trim() === selectedBranch.toLowerCase().trim()
+      )
+    : quizzes;
+
+  const currentQuiz =
+    branchQuizzes.find(q => q.id === selectedQuizId) || branchQuizzes[0] || quizzes[0];
+
   // Initialize defaults on open
   useEffect(() => {
     if (isOpen) {
       setFilterArea('');
       setFilterRole('');
-      setShowAllBanks(false);
       setDurationPreset(15);
       setTrimNotice(null);
 
@@ -96,10 +120,21 @@ export const AssignQuizModal: React.FC<Props> = ({
         : [];
       setSelectedCandidateIds(initialCandIds);
 
-      const initialQId = defaultQuizId || quizzes[0]?.id || '';
+      // Auto-preselect candidate's branch if single candidate
+      const cand = candidates.find(c => c.id === initialCandIds[0]);
+      const initialBranch = cand?.area || '';
+      setSelectedBranch(initialBranch);
+
+      const matchingQuizzes = initialBranch
+        ? quizzes.filter(
+            q => q.category.toLowerCase().trim() === initialBranch.toLowerCase().trim()
+          )
+        : quizzes;
+
+      const initialQId = defaultQuizId || matchingQuizzes[0]?.id || quizzes[0]?.id || '';
       setSelectedQuizId(initialQId);
 
-      const chosenQuiz = quizzes.find(q => q.id === initialQId);
+      const chosenQuiz = quizzes.find(q => q.id === initialQId) || matchingQuizzes[0];
       if (chosenQuiz) {
         // Preset 15 mins has max 10 questions
         const maxInitial = 10;
@@ -122,6 +157,23 @@ export const AssignQuizModal: React.FC<Props> = ({
     }
   };
 
+  // Handle branch / area cascading change
+  const handleBranchChange = (branch: string) => {
+    setSelectedBranch(branch);
+    const matching = branch
+      ? quizzes.filter(
+          q => q.category.toLowerCase().trim() === branch.toLowerCase().trim()
+        )
+      : quizzes;
+
+    if (matching.length > 0) {
+      handleQuizChange(matching[0].id);
+    } else {
+      setSelectedQuizId('');
+      setSelectedQuestionIds([]);
+    }
+  };
+
   // When quiz changes, select its questions up to maxAllowedQuestions
   const handleQuizChange = (qId: string) => {
     setSelectedQuizId(qId);
@@ -141,42 +193,22 @@ export const AssignQuizModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  // Single candidate detection and suggested question banks
-  const isSingleCandidate = selectedCandidateIds.length === 1;
-  const singleCandidate = isSingleCandidate
-    ? candidates.find(c => c.id === selectedCandidateIds[0])
-    : null;
-
-  const candidateAssociatedAreas: string[] = singleCandidate
-    ? [singleCandidate.area, ...(singleCandidate.secondaryAreas || [])].filter(Boolean) as string[]
-    : [];
-
-  const suggestedQuizzes = quizzes.filter(q => {
-    if (!singleCandidate) return true;
-    const catMatch = candidateAssociatedAreas.some(
-      a => a.toLowerCase().trim() === q.category.toLowerCase().trim()
-    );
-    const roleMatch = singleCandidate.roleApplied
-      ? q.supportedClassifications?.some(
-          r => r.toLowerCase().trim() === singleCandidate.roleApplied.toLowerCase().trim()
-        )
-      : false;
-    return catMatch || roleMatch;
-  });
-
-  const hasSuggested = isSingleCandidate && suggestedQuizzes.length > 0;
-  const displayedQuizzes =
-    hasSuggested && !showAllBanks ? suggestedQuizzes : quizzes;
-
-  const currentQuiz =
-    quizzes.find(q => q.id === selectedQuizId) || displayedQuizzes[0];
-
   // Candidate selection toggle
   const toggleCandidate = (cId: string) => {
+    let next: string[];
     if (selectedCandidateIds.includes(cId)) {
-      setSelectedCandidateIds(selectedCandidateIds.filter(id => id !== cId));
+      next = selectedCandidateIds.filter(id => id !== cId);
     } else {
-      setSelectedCandidateIds([...selectedCandidateIds, cId]);
+      next = [...selectedCandidateIds, cId];
+    }
+    setSelectedCandidateIds(next);
+
+    // If only one candidate selected, auto-align branch to their department
+    if (next.length === 1) {
+      const single = candidates.find(c => c.id === next[0]);
+      if (single?.area && (!selectedBranch || selectedBranch !== single.area)) {
+        handleBranchChange(single.area);
+      }
     }
   };
 
@@ -446,49 +478,94 @@ export const AssignQuizModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Step 2: Select Question Bank */}
-              <div className="space-y-2">
+              {/* Step 2: Select Question Bank (Cascading Selector by Branch / Area) */}
+              <div className="space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-[#2368f5]" />
                     <span>{t.recruiter.assignModal.step2Label}</span>
                   </label>
-                  {hasSuggested && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllBanks(!showAllBanks)}
-                      className="text-[11px] font-semibold text-[#2368f5] hover:underline cursor-pointer flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3 text-[#2368f5]" />
+                  {isSingleCandidate && singleCandidate?.area && (
+                    <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                      <Briefcase className="w-3.5 h-3.5 text-[#2368f5]" />
                       <span>
-                        {showAllBanks
-                          ? t.recruiter.assignModal.showSuggestedBanksBtn
-                          : t.recruiter.assignModal.showAllBanksBtn.replace(
-                              '{count}',
-                              String(quizzes.length)
-                            )}
+                        {t.recruiter.assignModal.candidateAreaBadge}:{' '}
+                        <strong>{getLocalizedArea(singleCandidate.area, language)}</strong>
                       </span>
-                    </button>
+                    </span>
                   )}
                 </div>
 
-                <select
-                  value={currentQuiz?.id || selectedQuizId}
-                  onChange={e => handleQuizChange(e.target.value)}
-                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-                >
-                  {displayedQuizzes.map(q => (
-                    <option key={q.id} value={q.id}>
-                      {getLocalizedArea(q.title, language)} ({q.questions.length}{' '}
-                      {t.recruiter.assignModal.questionsInBank}) •{' '}
-                      {getLocalizedArea(q.category, language)}
-                    </option>
-                  ))}
-                </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  {/* Level 1: Branch / Discipline Dropdown */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                      <Layers className="w-3.5 h-3.5 text-[#2368f5]" />
+                      <span>{t.recruiter.assignModal.step2BranchLabel}</span>
+                    </label>
+                    <select
+                      value={selectedBranch}
+                      onChange={e => handleBranchChange(e.target.value)}
+                      className="w-full text-xs font-medium p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                    >
+                      <option value="">
+                        {t.recruiter.assignModal.allBranchesOption} ({quizzes.length})
+                      </option>
+                      {availableBranches.map(branch => {
+                        const count = quizzes.filter(
+                          q => q.category.toLowerCase().trim() === branch.toLowerCase().trim()
+                        ).length;
+                        const isCandidateDept = candidateAssociatedAreas.some(
+                          a => a.toLowerCase().trim() === branch.toLowerCase().trim()
+                        );
+                        return (
+                          <option key={branch} value={branch}>
+                            {getLocalizedArea(branch, language)} ({count}){' '}
+                            {isCandidateDept ? '★' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Level 2: Question Banks in that Branch */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                      <BookOpen className="w-3.5 h-3.5 text-[#2368f5]" />
+                      <span>{t.recruiter.assignModal.step2BankLabel}</span>
+                    </label>
+                    <select
+                      value={currentQuiz?.id || selectedQuizId}
+                      onChange={e => handleQuizChange(e.target.value)}
+                      disabled={branchQuizzes.length === 0}
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] disabled:bg-slate-100 disabled:text-slate-400"
+                    >
+                      {branchQuizzes.length === 0 ? (
+                        <option value="">
+                          {t.recruiter.assignModal.selectBankPlaceholder}
+                        </option>
+                      ) : (
+                        branchQuizzes.map(q => (
+                          <option key={q.id} value={q.id}>
+                            {getLocalizedArea(q.title, language)} ({q.questions.length}{' '}
+                            {t.recruiter.assignModal.questionsInBank})
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                {branchQuizzes.length === 0 && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-2">
+                    <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>{t.recruiter.assignModal.noBanksInBranch}</span>
+                  </div>
+                )}
 
                 {/* Question Bank Metadata Badge Bar */}
                 {currentQuiz && (
-                  <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <div className="flex items-center gap-2 flex-wrap pt-0.5">
                     {/* Difficulty Badge */}
                     {currentQuiz.difficulty === 1 ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -510,22 +587,20 @@ export const AssignQuizModal: React.FC<Props> = ({
                     {/* Standard Time Limit */}
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
                       <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{currentQuiz.timeLimitMinutes || 60} min</span>
+                      <span>{currentQuiz.timeLimitMinutes || 60} min default</span>
                     </span>
 
-                    {/* Suggested Indicator */}
-                    {hasSuggested && !showAllBanks && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-                        <Sparkles className="w-3 h-3 text-amber-600" />
-                        <span>{t.recruiter.assignModal.suggestedForCandidate}</span>
-                      </span>
-                    )}
+                    {/* Branch Tag */}
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+                      <Layers className="w-3 h-3 text-slate-400" />
+                      <span>{getLocalizedArea(currentQuiz.category, language)}</span>
+                    </span>
                   </div>
                 )}
 
                 {currentQuiz?.supportedClassifications &&
                   currentQuiz.supportedClassifications.length > 0 && (
-                    <div className="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                       <p className="text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
                         <Briefcase className="w-3.5 h-3.5 text-[#2368f5]" />
                         <span>
@@ -548,7 +623,7 @@ export const AssignQuizModal: React.FC<Props> = ({
                   )}
               </div>
 
-              {/* Duration Presets & Reactive Question Selection */}
+              {/* Step 3: Duration Presets & Reactive Question Selection */}
               <div className="space-y-2 pt-2 border-t border-slate-200">
                 <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-[#2368f5]" />
