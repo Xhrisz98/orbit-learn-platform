@@ -20,10 +20,18 @@ import {
   Award,
   Info,
   Layers,
+  PlusCircle,
+  Trash2,
 } from 'lucide-react';
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
 import { resolveCandidateGender, getCandidateInitials } from '../../utils/genderHelper';
+
+interface ConfiguredBank {
+  quizId: string;
+  durationPreset: 5 | 15 | 30;
+  selectedQuestionIds: string[];
+}
 
 interface Props {
   isOpen: boolean;
@@ -38,24 +46,29 @@ export const AssignQuizModal: React.FC<Props> = ({
   defaultCandidateId,
   defaultQuizId,
 }) => {
-  const { candidates, quizzes, assignCustomQuiz, t, language } = useApp();
+  const { candidates, quizzes, assignCustomSuite, t, language } = useApp();
 
   // Top Demand Filters
   const [filterArea, setFilterArea] = useState<string>('');
   const [filterRole, setFilterRole] = useState<string>('');
 
-  // Selections
+  // Target Candidate Selection
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+
+  // Step 2: Cascading branch/bank selectors to add to suite
   const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [selectedQuizId, setSelectedQuizId] = useState<string>('');
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
 
-  // Duration preset: 5, 15, or 30 mins
-  const [durationPreset, setDurationPreset] = useState<5 | 15 | 30>(15);
+  // Multi-Bank Suite Configuration
+  const [configuredBanks, setConfiguredBanks] = useState<ConfiguredBank[]>([]);
+  const [activeBankIndex, setActiveBankIndex] = useState<number>(0);
+
+  // Notifications & Search
+  const [suiteWarning, setSuiteWarning] = useState<string | null>(null);
   const [trimNotice, setTrimNotice] = useState<string | null>(null);
-
   const [questionSearch, setQuestionSearch] = useState('');
   const [assignedSuccess, setAssignedSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Available filters from candidate pool
   const candidateAreas = Array.from(
@@ -81,10 +94,6 @@ export const AssignQuizModal: React.FC<Props> = ({
     return true;
   });
 
-  // Calculate max allowed questions based on duration preset
-  const maxAllowedQuestions =
-    durationPreset === 5 ? 5 : durationPreset === 15 ? 10 : Infinity;
-
   // Single candidate detection
   const isSingleCandidate = selectedCandidateIds.length === 1;
   const singleCandidate = isSingleCandidate
@@ -92,7 +101,7 @@ export const AssignQuizModal: React.FC<Props> = ({
     : null;
 
   const candidateAssociatedAreas: string[] = singleCandidate
-    ? [singleCandidate.area, ...(singleCandidate.secondaryAreas || [])].filter(Boolean) as string[]
+    ? ([singleCandidate.area, ...(singleCandidate.secondaryAreas || [])].filter(Boolean) as string[])
     : [];
 
   // Filter quizzes strictly by the selected branch (or all if empty)
@@ -102,16 +111,29 @@ export const AssignQuizModal: React.FC<Props> = ({
       )
     : quizzes;
 
-  const currentQuiz =
-    branchQuizzes.find(q => q.id === selectedQuizId) || branchQuizzes[0] || quizzes[0];
+  // Active bank being edited in Step 3
+  const activeBank = configuredBanks[activeBankIndex] || configuredBanks[0];
+  const activeQuiz = activeBank
+    ? quizzes.find(q => q.id === activeBank.quizId)
+    : null;
 
-  // Initialize defaults on open
+  const activeMaxAllowed = activeBank
+    ? activeBank.durationPreset === 5
+      ? 5
+      : activeBank.durationPreset === 15
+      ? 10
+      : Infinity
+    : Infinity;
+
+  // Initialize defaults on modal open
   useEffect(() => {
     if (isOpen) {
       setFilterArea('');
       setFilterRole('');
-      setDurationPreset(15);
+      setSuiteWarning(null);
       setTrimNotice(null);
+      setQuestionSearch('');
+      setIsSubmitting(false);
 
       const initialCandIds = defaultCandidateId
         ? [defaultCandidateId]
@@ -120,7 +142,7 @@ export const AssignQuizModal: React.FC<Props> = ({
         : [];
       setSelectedCandidateIds(initialCandIds);
 
-      // Auto-preselect candidate's branch if single candidate
+      // Candidate branch
       const cand = candidates.find(c => c.id === initialCandIds[0]);
       const initialBranch = cand?.area || '';
       setSelectedBranch(initialBranch);
@@ -134,30 +156,28 @@ export const AssignQuizModal: React.FC<Props> = ({
       const initialQId = defaultQuizId || matchingQuizzes[0]?.id || quizzes[0]?.id || '';
       setSelectedQuizId(initialQId);
 
-      const chosenQuiz = quizzes.find(q => q.id === initialQId) || matchingQuizzes[0];
+      // Pre-seed 1 default bank in configured suite (15 mins, up to 10 questions)
+      const chosenQuiz = quizzes.find(q => q.id === initialQId) || matchingQuizzes[0] || quizzes[0];
       if (chosenQuiz) {
-        // Preset 15 mins has max 10 questions
-        const maxInitial = 10;
-        setSelectedQuestionIds(chosenQuiz.questions.slice(0, maxInitial).map(q => q.id));
+        const initialQuestions = chosenQuiz.questions.slice(0, 10).map(q => q.id);
+        setConfiguredBanks([
+          {
+            quizId: chosenQuiz.id,
+            durationPreset: 15,
+            selectedQuestionIds: initialQuestions,
+          },
+        ]);
+        setActiveBankIndex(0);
+      } else {
+        setConfiguredBanks([]);
+        setActiveBankIndex(0);
       }
+
       setAssignedSuccess(false);
     }
   }, [isOpen, defaultCandidateId, defaultQuizId, candidates, quizzes]);
 
-  // Handle duration change with reactive auto-trimming
-  const handleDurationPresetChange = (newPreset: 5 | 15 | 30) => {
-    setDurationPreset(newPreset);
-    const newMax = newPreset === 5 ? 5 : newPreset === 15 ? 10 : Infinity;
-    if (selectedQuestionIds.length > newMax) {
-      setSelectedQuestionIds(prev => prev.slice(0, newMax));
-      setTrimNotice(
-        t.recruiter.assignModal.capAutoTrimmed.replace('{max}', String(newMax))
-      );
-      setTimeout(() => setTrimNotice(null), 4000);
-    }
-  };
-
-  // Handle branch / area cascading change
+  // Handle branch cascading change in Step 2
   const handleBranchChange = (branch: string) => {
     setSelectedBranch(branch);
     const matching = branch
@@ -167,31 +187,50 @@ export const AssignQuizModal: React.FC<Props> = ({
       : quizzes;
 
     if (matching.length > 0) {
-      handleQuizChange(matching[0].id);
+      setSelectedQuizId(matching[0].id);
     } else {
       setSelectedQuizId('');
-      setSelectedQuestionIds([]);
     }
   };
 
-  // When quiz changes, select its questions up to maxAllowedQuestions
-  const handleQuizChange = (qId: string) => {
-    setSelectedQuizId(qId);
-    const chosenQuiz = quizzes.find(q => q.id === qId);
-    if (chosenQuiz) {
-      if (chosenQuiz.questions.length > maxAllowedQuestions) {
-        setSelectedQuestionIds(
-          chosenQuiz.questions.slice(0, maxAllowedQuestions).map(q => q.id)
-        );
-      } else {
-        setSelectedQuestionIds(chosenQuiz.questions.map(q => q.id));
-      }
-    } else {
-      setSelectedQuestionIds([]);
+  // Add selected bank into the Assessment Suite
+  const handleAddBankToSuite = () => {
+    if (!selectedQuizId) return;
+
+    // Check duplicate
+    const alreadyExists = configuredBanks.some(b => b.quizId === selectedQuizId);
+    if (alreadyExists) {
+      setSuiteWarning(t.recruiter.assignModal.bankAlreadyAdded);
+      setTimeout(() => setSuiteWarning(null), 4000);
+      return;
     }
+
+    const quizToAdd = quizzes.find(q => q.id === selectedQuizId);
+    if (!quizToAdd) return;
+
+    // Default 15 min preset (max 10 questions)
+    const initialQuestions = quizToAdd.questions.slice(0, 10).map(q => q.id);
+    const newBank: ConfiguredBank = {
+      quizId: selectedQuizId,
+      durationPreset: 15,
+      selectedQuestionIds: initialQuestions,
+    };
+
+    const nextSuite = [...configuredBanks, newBank];
+    setConfiguredBanks(nextSuite);
+    setActiveBankIndex(nextSuite.length - 1);
+    setSuiteWarning(null);
   };
 
-  if (!isOpen) return null;
+  // Remove bank from the suite
+  const handleRemoveBank = (indexToRemove: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextSuite = configuredBanks.filter((_, idx) => idx !== indexToRemove);
+    setConfiguredBanks(nextSuite);
+    if (activeBankIndex >= nextSuite.length) {
+      setActiveBankIndex(Math.max(0, nextSuite.length - 1));
+    }
+  };
 
   // Candidate selection toggle
   const toggleCandidate = (cId: string) => {
@@ -203,8 +242,8 @@ export const AssignQuizModal: React.FC<Props> = ({
     }
     setSelectedCandidateIds(next);
 
-    // If only one candidate selected, auto-align branch to their department
-    if (next.length === 1) {
+    // If only one candidate selected and no suite configured yet, align branch
+    if (next.length === 1 && configuredBanks.length <= 1) {
       const single = candidates.find(c => c.id === next[0]);
       if (single?.area && (!selectedBranch || selectedBranch !== single.area)) {
         handleBranchChange(single.area);
@@ -220,43 +259,91 @@ export const AssignQuizModal: React.FC<Props> = ({
     setSelectedCandidateIds([]);
   };
 
-  // Question selection toggle with strict reactive cap enforcement
+  // Handle duration change for ACTIVE bank with auto-trimming
+  const handleDurationPresetChange = (newPreset: 5 | 15 | 30) => {
+    if (!activeBank) return;
+    const newMax = newPreset === 5 ? 5 : newPreset === 15 ? 10 : Infinity;
+
+    setConfiguredBanks(prev =>
+      prev.map((bank, idx) => {
+        if (idx !== activeBankIndex) return bank;
+        let newQuestions = bank.selectedQuestionIds;
+        if (newQuestions.length > newMax) {
+          newQuestions = newQuestions.slice(0, newMax);
+          setTrimNotice(
+            t.recruiter.assignModal.capAutoTrimmed.replace('{max}', String(newMax))
+          );
+          setTimeout(() => setTrimNotice(null), 4000);
+        }
+        return {
+          ...bank,
+          durationPreset: newPreset,
+          selectedQuestionIds: newQuestions,
+        };
+      })
+    );
+  };
+
+  // Question toggle for ACTIVE bank
   const toggleQuestion = (qId: string) => {
-    if (selectedQuestionIds.includes(qId)) {
-      setSelectedQuestionIds(selectedQuestionIds.filter(id => id !== qId));
-    } else {
-      if (selectedQuestionIds.length >= maxAllowedQuestions) {
-        return; // Block adding past cap
-      }
-      setSelectedQuestionIds([...selectedQuestionIds, qId]);
-    }
+    if (!activeBank) return;
+    const maxAllowed = activeMaxAllowed;
+
+    setConfiguredBanks(prev =>
+      prev.map((bank, idx) => {
+        if (idx !== activeBankIndex) return bank;
+        const isChecked = bank.selectedQuestionIds.includes(qId);
+        if (isChecked) {
+          return {
+            ...bank,
+            selectedQuestionIds: bank.selectedQuestionIds.filter(id => id !== qId),
+          };
+        } else {
+          if (bank.selectedQuestionIds.length >= maxAllowed) {
+            return bank; // Cap reached
+          }
+          return {
+            ...bank,
+            selectedQuestionIds: [...bank.selectedQuestionIds, qId],
+          };
+        }
+      })
+    );
   };
 
   const selectAllQuestions = () => {
-    if (currentQuiz) {
-      const allIds = currentQuiz.questions.map(q => q.id);
-      if (allIds.length > maxAllowedQuestions) {
-        setSelectedQuestionIds(allIds.slice(0, maxAllowedQuestions));
-        setTrimNotice(
-          t.recruiter.assignModal.capAutoTrimmed.replace(
-            '{max}',
-            String(maxAllowedQuestions)
-          )
-        );
-        setTimeout(() => setTrimNotice(null), 4000);
-      } else {
-        setSelectedQuestionIds(allIds);
-      }
+    if (!activeBank || !activeQuiz) return;
+    const maxAllowed = activeMaxAllowed;
+    const allIds = activeQuiz.questions.map(q => q.id);
+    const chosen = allIds.length > maxAllowed ? allIds.slice(0, maxAllowed) : allIds;
+
+    if (allIds.length > maxAllowed) {
+      setTrimNotice(
+        t.recruiter.assignModal.capAutoTrimmed.replace('{max}', String(maxAllowed))
+      );
+      setTimeout(() => setTrimNotice(null), 4000);
     }
+
+    setConfiguredBanks(prev =>
+      prev.map((bank, idx) =>
+        idx === activeBankIndex ? { ...bank, selectedQuestionIds: chosen } : bank
+      )
+    );
   };
 
   const deselectAllQuestions = () => {
-    setSelectedQuestionIds([]);
+    setConfiguredBanks(prev =>
+      prev.map((bank, idx) =>
+        idx === activeBankIndex ? { ...bank, selectedQuestionIds: [] } : bank
+      )
+    );
   };
 
-  // Filter questions by search within the selected bank
+  if (!isOpen) return null;
+
+  // Filter questions by search within the active bank
   const filteredQuestions =
-    currentQuiz?.questions.filter(q => {
+    activeQuiz?.questions.filter(q => {
       if (!questionSearch.trim()) return true;
       const term = questionSearch.toLowerCase();
       return (
@@ -265,7 +352,18 @@ export const AssignQuizModal: React.FC<Props> = ({
       );
     }) || [];
 
-  const isCapReached = selectedQuestionIds.length >= maxAllowedQuestions;
+  const isCapReached =
+    Boolean(activeBank) && activeBank.selectedQuestionIds.length >= activeMaxAllowed;
+
+  // Calculations for total suite metrics
+  const totalQuestions = configuredBanks.reduce(
+    (sum, b) => sum + b.selectedQuestionIds.length,
+    0
+  );
+  const hasEmptyBank = configuredBanks.some(b => b.selectedQuestionIds.length === 0);
+
+  // Preview quiz currently in the Step 2 dropdown
+  const previewDropdownQuiz = branchQuizzes.find(q => q.id === selectedQuizId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,38 +371,52 @@ export const AssignQuizModal: React.FC<Props> = ({
       alert(t.recruiter.assignModal.noCandidatesSelected);
       return;
     }
-    if (selectedQuestionIds.length === 0) {
+    if (configuredBanks.length === 0) {
+      alert(t.recruiter.assignModal.atLeastOneBankNeeded);
+      return;
+    }
+    if (hasEmptyBank) {
       alert(t.recruiter.assignModal.noQuestionsSelected);
       return;
     }
 
-    await assignCustomQuiz(
-      selectedCandidateIds,
-      currentQuiz?.id || selectedQuizId,
-      selectedQuestionIds,
-      durationPreset
-    );
-    setAssignedSuccess(true);
-    setTimeout(() => {
-      setAssignedSuccess(false);
-      onClose();
-    }, 1400);
+    setIsSubmitting(true);
+    try {
+      await assignCustomSuite(
+        selectedCandidateIds,
+        configuredBanks.map(b => ({
+          quizId: b.quizId,
+          selectedQuestionIds: b.selectedQuestionIds,
+          durationMinutes: b.durationPreset,
+        }))
+      );
+      setAssignedSuccess(true);
+      setTimeout(() => {
+        setAssignedSuccess(false);
+        setIsSubmitting(false);
+        onClose();
+      }, 1600);
+    } catch (err) {
+      console.error('Error assigning suite:', err);
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-3xl w-full p-5 sm:p-7 border border-slate-200 shadow-2xl my-6 max-h-[92vh] flex flex-col">
+      <div className="bg-white rounded-3xl max-w-4xl w-full p-5 sm:p-7 border border-slate-200 shadow-2xl my-6 max-h-[94vh] flex flex-col">
         {assignedSuccess ? (
-          <div className="text-center py-10 space-y-4 my-auto">
+          <div className="text-center py-12 space-y-4 my-auto">
             <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-md">
               <CheckCircle2 className="w-9 h-9" />
             </div>
             <h3 className="text-xl font-black text-slate-900">
               {t.recruiter.assignModal.successTitle}
             </h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
-              {t.recruiter.assignModal.successDesc
-                .replace('{questions}', String(selectedQuestionIds.length))
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              {t.recruiter.assignModal.successMultiDesc
+                .replace('{banks}', String(configuredBanks.length))
+                .replace('{questions}', String(totalQuestions))
                 .replace('{candidates}', String(selectedCandidateIds.length))}
             </p>
           </div>
@@ -478,8 +590,8 @@ export const AssignQuizModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Step 2: Select Question Bank (Cascading Selector by Branch / Area) */}
-              <div className="space-y-3">
+              {/* Step 2: Multi-Bank Assessment Suite Builder */}
+              <div className="space-y-3 pt-2 border-t border-slate-200">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-[#2368f5]" />
@@ -496,216 +608,370 @@ export const AssignQuizModal: React.FC<Props> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                  {/* Level 1: Branch / Discipline Dropdown */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                      <Layers className="w-3.5 h-3.5 text-[#2368f5]" />
-                      <span>{t.recruiter.assignModal.step2BranchLabel}</span>
-                    </label>
-                    <select
-                      value={selectedBranch}
-                      onChange={e => handleBranchChange(e.target.value)}
-                      className="w-full text-xs font-medium p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-                    >
-                      <option value="">
-                        {t.recruiter.assignModal.allBranchesOption} ({quizzes.length})
-                      </option>
-                      {availableBranches.map(branch => {
-                        const count = quizzes.filter(
-                          q => q.category.toLowerCase().trim() === branch.toLowerCase().trim()
-                        ).length;
-                        const isCandidateDept = candidateAssociatedAreas.some(
-                          a => a.toLowerCase().trim() === branch.toLowerCase().trim()
-                        );
-                        return (
-                          <option key={branch} value={branch}>
-                            {getLocalizedArea(branch, language)} ({count}){' '}
-                            {isCandidateDept ? '★' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-
-                  {/* Level 2: Question Banks in that Branch */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                      <BookOpen className="w-3.5 h-3.5 text-[#2368f5]" />
-                      <span>{t.recruiter.assignModal.step2BankLabel}</span>
-                    </label>
-                    <select
-                      value={currentQuiz?.id || selectedQuizId}
-                      onChange={e => handleQuizChange(e.target.value)}
-                      disabled={branchQuizzes.length === 0}
-                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] disabled:bg-slate-100 disabled:text-slate-400"
-                    >
-                      {branchQuizzes.length === 0 ? (
+                {/* Cascading Branch & Bank Selector Bar with Add Button */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                    {/* Level 1: Branch / Discipline Dropdown */}
+                    <div className="sm:col-span-5">
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                        <Layers className="w-3.5 h-3.5 text-[#2368f5]" />
+                        <span>{t.recruiter.assignModal.step2BranchLabel}</span>
+                      </label>
+                      <select
+                        value={selectedBranch}
+                        onChange={e => handleBranchChange(e.target.value)}
+                        className="w-full text-xs font-medium p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                      >
                         <option value="">
-                          {t.recruiter.assignModal.selectBankPlaceholder}
+                          {t.recruiter.assignModal.allBranchesOption} ({quizzes.length})
                         </option>
-                      ) : (
-                        branchQuizzes.map(q => (
-                          <option key={q.id} value={q.id}>
-                            {getLocalizedArea(q.title, language)} ({q.questions.length}{' '}
-                            {t.recruiter.assignModal.questionsInBank})
+                        {availableBranches.map(branch => {
+                          const count = quizzes.filter(
+                            q => q.category.toLowerCase().trim() === branch.toLowerCase().trim()
+                          ).length;
+                          const isCandidateDept = candidateAssociatedAreas.some(
+                            a => a.toLowerCase().trim() === branch.toLowerCase().trim()
+                          );
+                          return (
+                            <option key={branch} value={branch}>
+                              {getLocalizedArea(branch, language)} ({count}){' '}
+                              {isCandidateDept ? '(Suggested)' : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    {/* Level 2: Question Banks in that Branch */}
+                    <div className="sm:col-span-4">
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                        <BookOpen className="w-3.5 h-3.5 text-[#2368f5]" />
+                        <span>{t.recruiter.assignModal.step2BankLabel}</span>
+                      </label>
+                      <select
+                        value={selectedQuizId}
+                        onChange={e => setSelectedQuizId(e.target.value)}
+                        disabled={branchQuizzes.length === 0}
+                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] disabled:bg-slate-100 disabled:text-slate-400"
+                      >
+                        {branchQuizzes.length === 0 ? (
+                          <option value="">
+                            {t.recruiter.assignModal.selectBankPlaceholder}
                           </option>
-                        ))
-                      )}
-                    </select>
+                        ) : (
+                          branchQuizzes.map(q => (
+                            <option key={q.id} value={q.id}>
+                              {getLocalizedArea(q.title, language)} ({q.questions.length}{' '}
+                              {t.recruiter.assignModal.questionsInBank})
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Action Button: Add Bank to Suite */}
+                    <div className="sm:col-span-3">
+                      <button
+                        type="button"
+                        onClick={handleAddBankToSuite}
+                        disabled={!selectedQuizId}
+                        className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        <span>{t.recruiter.assignModal.addBankToSuiteBtn}</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {branchQuizzes.length === 0 && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-2">
-                    <Info className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>{t.recruiter.assignModal.noBanksInBranch}</span>
-                  </div>
-                )}
-
-                {/* Question Bank Metadata Badge Bar */}
-                {currentQuiz && (
-                  <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                    {/* Difficulty Badge */}
-                    {currentQuiz.difficulty === 1 ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
-                        <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{t.recruiter.createQuizModal.diffLevel1}</span>
-                      </span>
-                    ) : currentQuiz.difficulty === 3 ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-purple-50 text-purple-800 border border-purple-200">
-                        <Award className="w-3.5 h-3.5 text-purple-600" />
-                        <span>{t.recruiter.createQuizModal.diffLevel3}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-[#2368f5] border border-blue-200">
-                        <Zap className="w-3.5 h-3.5 text-[#2368f5]" />
-                        <span>{t.recruiter.createQuizModal.diffLevel2}</span>
-                      </span>
-                    )}
-
-                    {/* Standard Time Limit */}
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{currentQuiz.timeLimitMinutes || 60} min default</span>
-                    </span>
-
-                    {/* Branch Tag */}
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
-                      <Layers className="w-3 h-3 text-slate-400" />
-                      <span>{getLocalizedArea(currentQuiz.category, language)}</span>
-                    </span>
-                  </div>
-                )}
-
-                {currentQuiz?.supportedClassifications &&
-                  currentQuiz.supportedClassifications.length > 0 && (
-                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                      <p className="text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                        <Briefcase className="w-3.5 h-3.5 text-[#2368f5]" />
-                        <span>
-                          {language === 'es'
-                            ? 'Puestos y Clasificaciones Compatibles (County of Orange):'
-                            : 'Supported Positions & Classifications (County of Orange):'}
-                        </span>
-                      </p>
-                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
-                        {currentQuiz.supportedClassifications.map((item, idx) => (
-                          <span
-                            key={idx}
-                            className="text-[10px] font-medium px-2 py-0.5 bg-white border border-slate-200 text-slate-700 rounded-md"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                      </div>
+                  {/* Warning / duplicate message */}
+                  {suiteWarning && (
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+                      <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>{suiteWarning}</span>
                     </div>
                   )}
-              </div>
 
-              {/* Step 3: Duration Presets & Reactive Question Selection */}
-              <div className="space-y-2 pt-2 border-t border-slate-200">
-                <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-[#2368f5]" />
-                  <span>{t.recruiter.assignModal.stepDurationTitle}</span>
-                </label>
-
-                {/* 3 Duration Preset Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleDurationPresetChange(5)}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
-                      durationPreset === 5
-                        ? 'bg-blue-50 border-[#2368f5] text-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span>{t.recruiter.assignModal.preset5Min}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDurationPresetChange(15)}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
-                      durationPreset === 15
-                        ? 'bg-blue-50 border-[#2368f5] text-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span>{t.recruiter.assignModal.preset15Min}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDurationPresetChange(30)}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
-                      durationPreset === 30
-                        ? 'bg-blue-50 border-[#2368f5] text-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span>{t.recruiter.assignModal.preset30Min}</span>
-                  </button>
+                  {/* Dropdown Quiz Preview Metadata */}
+                  {previewDropdownQuiz && (
+                    <div className="flex items-center gap-2 flex-wrap pt-1 text-[11px]">
+                      {previewDropdownQuiz.difficulty === 1 ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          <Shield className="w-3 h-3 text-emerald-600" />
+                          <span>{t.recruiter.createQuizModal.diffLevel1}</span>
+                        </span>
+                      ) : previewDropdownQuiz.difficulty === 3 ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200">
+                          <Award className="w-3 h-3 text-purple-600" />
+                          <span>{t.recruiter.createQuizModal.diffLevel3}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-[#2368f5] border border-blue-200">
+                          <Zap className="w-3 h-3 text-[#2368f5]" />
+                          <span>{t.recruiter.createQuizModal.diffLevel2}</span>
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span>{previewDropdownQuiz.timeLimitMinutes || 60}m standard</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600">
+                        <Layers className="w-3 h-3 text-slate-400" />
+                        <span>{getLocalizedArea(previewDropdownQuiz.category, language)}</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Dynamic Trim Notification */}
-                {trimNotice && (
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold flex items-center gap-2">
-                    <Info className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>{trimNotice}</span>
-                  </div>
-                )}
-
-                {/* Cap Reached Alert */}
-                {isCapReached && maxAllowedQuestions !== Infinity && (
-                  <div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-xs font-semibold flex items-center gap-2">
-                    <Info className="w-4 h-4 text-[#2368f5] shrink-0" />
-                    <span>
-                      {t.recruiter.assignModal.capReachedNotice
-                        .replace('{minutes}', String(durationPreset))
-                        .replace('{max}', String(maxAllowedQuestions))}
+                {/* Configured Assessment Suite Display Tray */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                    <span className="flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-[#2368f5]" />
+                      <span>
+                        {t.recruiter.assignModal.configuredSuiteTitle.replace(
+                          '{count}',
+                          String(configuredBanks.length)
+                        )}
+                      </span>
+                    </span>
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      {t.recruiter.assignModal.totalBanksCount.replace(
+                        '{count}',
+                        String(configuredBanks.length)
+                      )}{' '}
+                      •{' '}
+                      {t.recruiter.assignModal.totalQuestionsCount.replace(
+                        '{count}',
+                        String(totalQuestions)
+                      )}
                     </span>
                   </div>
-                )}
+
+                  {configuredBanks.length === 0 ? (
+                    <div className="p-4 bg-slate-50 border border-dashed border-slate-300 rounded-2xl text-center text-xs text-slate-500">
+                      <Info className="w-4 h-4 text-slate-400 mx-auto mb-1" />
+                      <span>{t.recruiter.assignModal.atLeastOneBankNeeded}</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {configuredBanks.map((b, idx) => {
+                        const q = quizzes.find(item => item.id === b.quizId);
+                        const isActive = idx === activeBankIndex;
+                        return (
+                          <div
+                            key={`${b.quizId}-${idx}`}
+                            onClick={() => setActiveBankIndex(idx)}
+                            className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                              isActive
+                                ? 'bg-blue-50/70 border-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
+                                : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span
+                                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+                                      isActive
+                                        ? 'bg-[#2368f5] text-white'
+                                        : 'bg-slate-100 text-slate-700'
+                                    }`}
+                                  >
+                                    #{idx + 1}
+                                  </span>
+                                  {q?.category && (
+                                    <span className="text-[10px] font-semibold text-slate-500 truncate flex items-center gap-1">
+                                      <Layers className="w-2.5 h-2.5 text-slate-400" />
+                                      <span>{getLocalizedArea(q.category, language)}</span>
+                                    </span>
+                                  )}
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-900 truncate">
+                                  {q?.title || b.quizId}
+                                </h4>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={e => handleRemoveBank(idx, e)}
+                                title={t.recruiter.assignModal.removeBankTooltip}
+                                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 pt-2.5 mt-2 border-t border-slate-200/60 text-[11px]">
+                              {/* Difficulty Badge */}
+                              {q?.difficulty === 1 ? (
+                                <span className="text-[10px] font-semibold text-emerald-700 flex items-center gap-1">
+                                  <Shield className="w-3 h-3 text-emerald-600" />
+                                  <span>Level 1</span>
+                                </span>
+                              ) : q?.difficulty === 3 ? (
+                                <span className="text-[10px] font-semibold text-purple-700 flex items-center gap-1">
+                                  <Award className="w-3 h-3 text-purple-600" />
+                                  <span>Level 3</span>
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-semibold text-blue-700 flex items-center gap-1">
+                                  <Zap className="w-3 h-3 text-[#2368f5]" />
+                                  <span>Level 2</span>
+                                </span>
+                              )}
+
+                              {/* Time & Question Pill */}
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 flex items-center gap-1 shadow-2xs">
+                                <Clock className="w-2.5 h-2.5 text-slate-400" />
+                                <span>{b.durationPreset}m</span>
+                                <span>•</span>
+                                <span className="text-[#2368f5]">
+                                  {b.selectedQuestionIds.length} Qs
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Step 3: Manual Questions Selector */}
-              {currentQuiz && (
-                <div className="space-y-3 pt-2 border-t border-slate-200">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <label className="text-xs font-bold text-slate-900">
-                        {t.recruiter.assignModal.step3Label}
+              {/* Step 3: Module Question Customizer (Duration & Question Picker for Active Bank) */}
+              {configuredBanks.length > 0 && activeBank && activeQuiz && (
+                <div className="space-y-3 pt-3 border-t border-slate-200">
+                  {/* Module Segmented Tab Switcher */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <BookOpen className="w-4 h-4 text-[#2368f5]" />
+                        <span>{t.recruiter.assignModal.step3Label}</span>
                       </label>
-                      <div className="text-[11px] font-bold text-[#2368f5] mt-0.5 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" />
+                      <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                        <span>{t.recruiter.assignModal.activeBankTab}</span>
+                        <strong className="text-slate-900">{activeQuiz.title}</strong>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+                      {configuredBanks.map((b, idx) => {
+                        const q = quizzes.find(item => item.id === b.quizId);
+                        const isActive = idx === activeBankIndex;
+                        return (
+                          <button
+                            key={`tab-${b.quizId}-${idx}`}
+                            type="button"
+                            onClick={() => setActiveBankIndex(idx)}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-xl border whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                              isActive
+                                ? 'bg-[#2368f5] text-white border-[#2368f5] shadow-xs'
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span>
+                              {q?.title
+                                ? q.title.length > 20
+                                  ? `${q.title.slice(0, 20)}...`
+                                  : q.title
+                                : `Bank ${idx + 1}`}
+                            </span>
+                            <span
+                              className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                                isActive
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-slate-100 text-slate-600'
+                              }`}
+                            >
+                              {b.selectedQuestionIds.length} Qs
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Duration Presets for Active Bank */}
+                  <div className="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-[#2368f5]" />
+                        <span>{t.recruiter.assignModal.stepDurationTitle}</span>
+                      </label>
+                      <span className="text-[11px] font-semibold text-slate-500">
+                        {activeBank.durationPreset} min limit
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDurationPresetChange(5)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                          activeBank.durationPreset === 5
+                            ? 'bg-blue-50 border-[#2368f5] text-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>{t.recruiter.assignModal.preset5Min}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDurationPresetChange(15)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                          activeBank.durationPreset === 15
+                            ? 'bg-blue-50 border-[#2368f5] text-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>{t.recruiter.assignModal.preset15Min}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDurationPresetChange(30)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                          activeBank.durationPreset === 30
+                            ? 'bg-blue-50 border-[#2368f5] text-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>{t.recruiter.assignModal.preset30Min}</span>
+                      </button>
+                    </div>
+
+                    {/* Trim Notification */}
+                    {trimNotice && (
+                      <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+                        <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>{trimNotice}</span>
+                      </div>
+                    )}
+
+                    {/* Cap Reached Alert */}
+                    {isCapReached && activeMaxAllowed !== Infinity && (
+                      <div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+                        <Info className="w-4 h-4 text-[#2368f5] shrink-0" />
                         <span>
-                          {selectedQuestionIds.length} /{' '}
-                          {maxAllowedQuestions === Infinity
-                            ? currentQuiz.questions.length
-                            : `${maxAllowedQuestions} max`}{' '}
-                          {t.recruiter.assignModal.selectedCounter}
+                          {t.recruiter.assignModal.capReachedNotice
+                            .replace('{minutes}', String(activeBank.durationPreset))
+                            .replace('{max}', String(activeMaxAllowed))}
                         </span>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Manual Question Picker Header & Actions */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                    <div className="text-[11px] font-bold text-[#2368f5] flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>
+                        {activeBank.selectedQuestionIds.length} /{' '}
+                        {activeMaxAllowed === Infinity
+                          ? activeQuiz.questions.length
+                          : `${activeMaxAllowed} max`}{' '}
+                        {t.recruiter.assignModal.selectedCounter}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -735,19 +1001,19 @@ export const AssignQuizModal: React.FC<Props> = ({
                       placeholder={t.recruiter.assignModal.searchQuestionsPlaceholder}
                       value={questionSearch}
                       onChange={e => setQuestionSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                      className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
                     />
                   </div>
 
                   {/* Question Checklist */}
-                  <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                  <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
                     {filteredQuestions.length === 0 ? (
                       <p className="text-xs text-slate-400 py-4 text-center">
                         {t.recruiter.assignModal.noQuestionsMatch}
                       </p>
                     ) : (
                       filteredQuestions.map((q, idx) => {
-                        const isChecked = selectedQuestionIds.includes(q.id);
+                        const isChecked = activeBank.selectedQuestionIds.includes(q.id);
                         const isDisabled = !isChecked && isCapReached;
 
                         return (
@@ -814,14 +1080,20 @@ export const AssignQuizModal: React.FC<Props> = ({
                   type="submit"
                   disabled={
                     selectedCandidateIds.length === 0 ||
-                    selectedQuestionIds.length === 0
+                    configuredBanks.length === 0 ||
+                    hasEmptyBank ||
+                    totalQuestions === 0 ||
+                    isSubmitting
                   }
-                  className="flex-1 py-2.5 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] disabled:opacity-40 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-2 py-2.5 px-4 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] disabled:opacity-40 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <SendHorizontal className="w-3.5 h-3.5" />
                   <span>
-                    {t.recruiter.assignModal.confirmBtn} (
-                    {selectedQuestionIds.length} Qs • {durationPreset}m)
+                    {isSubmitting
+                      ? t.common.loading
+                      : t.recruiter.assignModal.confirmMultiBtn
+                          .replace('{banks}', String(configuredBanks.length))
+                          .replace('{questions}', String(totalQuestions))}
                   </span>
                 </button>
               </div>

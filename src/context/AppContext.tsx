@@ -38,6 +38,7 @@ interface AppContextType {
   updateCandidate: (candidateId: string, updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string; secondaryAreas?: string[] }) => Promise<void>;
   assignQuiz: (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => void;
   assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[], durationMinutes?: number) => Promise<void>;
+  assignCustomSuite: (candidateIds: string[], suite: { quizId: string; selectedQuestionIds: string[]; durationMinutes?: number }[]) => Promise<void>;
   submitAssessment: (assignmentId: string, userAnswers: Record<string, string[]>) => SubmitResult;
   updateAssignmentReviewStatus: (assignmentId: string, reviewStatus: 'stand_by' | 'approved' | 'rejected') => Promise<void>;
   deleteQuiz: (quizId: string) => Promise<void>;
@@ -399,6 +400,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAssignments(prev => [...newAssignments, ...prev]);
   };
 
+  const assignCustomSuite = async (
+    candidateIds: string[],
+    suite: { quizId: string; selectedQuestionIds: string[]; durationMinutes?: number }[]
+  ) => {
+    if (candidateIds.length === 0 || suite.length === 0) return;
+
+    if (isSupabaseConfigured) {
+      try {
+        await assignmentService.assignCustomSuite(candidateIds, suite);
+        const refreshed = await assignmentService.getAll();
+        setAssignments(refreshed);
+        return;
+      } catch (err) {
+        console.error('Error assigning custom suite on Supabase:', err);
+      }
+    }
+
+    const nowStr = new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const newAssignments: AssessmentAssignment[] = [];
+
+    suite.forEach((item, itemIdx) => {
+      const quiz = quizzes.find(q => q.id === item.quizId);
+      if (!quiz) return;
+      candidateIds.forEach((cId, candIdx) => {
+        const candidate = candidates.find(c => c.id === cId);
+        newAssignments.push({
+          id: `assign-${Date.now()}-${itemIdx}-${candIdx}-${Math.random().toString(36).substring(2, 7)}`,
+          candidateId: cId,
+          candidateName: candidate?.name || 'Candidate',
+          candidateEmail: candidate?.email || 'email@candidate.com',
+          roleApplied: candidate?.roleApplied || 'Applicant',
+          quizId: quiz.id,
+          quizTitle: quiz.title,
+          difficulty: quiz.difficulty,
+          durationMinutes: item.durationMinutes || quiz.timeLimitMinutes,
+          selectedQuestionIds: item.selectedQuestionIds,
+          status: 'pending',
+          totalQuestions: item.selectedQuestionIds.length,
+          assignedAt: nowStr,
+        });
+      });
+    });
+
+    setAssignments(prev => [...newAssignments, ...prev]);
+  };
+
   const submitAssessment = (assignmentId: string, userAnswers: Record<string, string[]>): SubmitResult => {
     const assignment = assignments.find(a => a.id === assignmentId);
     if (!assignment) {
@@ -544,6 +591,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateCandidate,
         assignQuiz,
         assignCustomQuiz,
+        assignCustomSuite,
         submitAssessment,
         updateAssignmentReviewStatus,
         deleteQuiz,

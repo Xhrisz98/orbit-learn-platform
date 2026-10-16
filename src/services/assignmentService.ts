@@ -102,6 +102,31 @@ export const assignmentService = {
     if (error) throw error;
   },
 
+  async assignCustomSuite(
+    candidateIds: string[],
+    suite: { quizId: string; selectedQuestionIds: string[]; durationMinutes?: number }[]
+  ): Promise<void> {
+    const inserts: any[] = [];
+    for (const item of suite) {
+      for (const candId of candidateIds) {
+        inserts.push({
+          candidate_id: candId,
+          quiz_id: item.quizId,
+          selected_question_ids: item.selectedQuestionIds,
+          status: 'pending',
+          total_questions: item.selectedQuestionIds.length,
+          correct_answers_count: 0,
+          passed_threshold: false,
+          answers: item.durationMinutes ? { _duration_minutes: item.durationMinutes } : {},
+        });
+      }
+    }
+    if (inserts.length > 0) {
+      const { error } = await supabase.from('assessment_assignments').insert(inserts);
+      if (error) throw error;
+    }
+  },
+
   async submitAssessment(
     assignmentId: string,
     answers: Record<string, string[]>,
