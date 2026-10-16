@@ -34,10 +34,10 @@ interface AppContextType {
   createArea: (name: string, description?: string) => Promise<QuizArea>;
   createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => Promise<void>;
   updateQuiz: (quizId: string, updatedData: Partial<Quiz>) => Promise<void>;
-  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string }) => Promise<void>;
-  updateCandidate: (candidateId: string, updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string }) => Promise<void>;
+  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string; secondaryAreas?: string[] }) => Promise<void>;
+  updateCandidate: (candidateId: string, updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string; secondaryAreas?: string[] }) => Promise<void>;
   assignQuiz: (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => void;
-  assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => Promise<void>;
+  assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[], durationMinutes?: number) => Promise<void>;
   submitAssessment: (assignmentId: string, userAnswers: Record<string, string[]>) => SubmitResult;
   updateAssignmentReviewStatus: (assignmentId: string, reviewStatus: 'stand_by' | 'approved' | 'rejected') => Promise<void>;
   deleteQuiz: (quizId: string) => Promise<void>;
@@ -240,7 +240,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAssignments(prev => prev.filter(a => a.quizId !== quizId));
   };
 
-  const createCandidate = async (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string }) => {
+  const createCandidate = async (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string; secondaryAreas?: string[] }) => {
     if (isSupabaseConfigured) {
       try {
         const created = await candidateService.create(newCandData);
@@ -250,12 +250,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.error('Error creating candidate on Supabase:', err);
       }
     }
+    const secPart = newCandData.secondaryAreas && newCandData.secondaryAreas.length > 0 ? `|sec:${newCandData.secondaryAreas.join(';')}` : '';
     const created: Candidate = {
       ...newCandData,
       id: `cand-${Date.now()}`,
-      avatar: `gender:${newCandData.gender || 'male'}${newCandData.area ? `|area:${newCandData.area}` : ''}`,
+      avatar: `gender:${newCandData.gender || 'male'}${newCandData.area ? `|area:${newCandData.area}` : ''}${secPart}`,
       gender: newCandData.gender || 'male',
       area: newCandData.area,
+      secondaryAreas: newCandData.secondaryAreas || [],
       registeredAt: new Date().toISOString().split('T')[0],
     };
     setCandidates(prev => [created, ...prev]);
@@ -263,7 +265,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateCandidate = async (
     candidateId: string,
-    updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string }
+    updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string; secondaryAreas?: string[] }
   ) => {
     if (isSupabaseConfigured) {
       try {
@@ -287,6 +289,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
+    const secPart = updatedData.secondaryAreas && updatedData.secondaryAreas.length > 0 ? `|sec:${updatedData.secondaryAreas.join(';')}` : '';
     setCandidates(prev =>
       prev.map(c => {
         if (c.id !== candidateId) return c;
@@ -296,8 +299,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           email: updatedData.email,
           roleApplied: updatedData.roleApplied,
           area: updatedData.area,
+          secondaryAreas: updatedData.secondaryAreas || [],
           gender: updatedData.gender,
-          avatar: `gender:${updatedData.gender}${updatedData.area ? `|area:${updatedData.area}` : ''}`,
+          avatar: `gender:${updatedData.gender}${updatedData.area ? `|area:${updatedData.area}` : ''}${secPart}`,
         };
       })
     );
@@ -345,6 +349,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       roleApplied: candidate.roleApplied,
       quizId: quiz.id,
       quizTitle: quiz.title,
+      difficulty: quiz.difficulty,
+      durationMinutes: quiz.timeLimitMinutes,
       selectedQuestionIds: chosenIds,
       status: 'pending',
       totalQuestions: chosenIds.length,
@@ -354,10 +360,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAssignments(prev => [newAssignment, ...prev]);
   };
 
-  const assignCustomQuiz = async (candidateIds: string[], quizId: string, selectedQuestionIds: string[]) => {
+  const assignCustomQuiz = async (candidateIds: string[], quizId: string, selectedQuestionIds: string[], durationMinutes?: number) => {
     if (isSupabaseConfigured) {
       try {
-        await assignmentService.assignCustom(candidateIds, quizId, selectedQuestionIds);
+        await assignmentService.assignCustom(candidateIds, quizId, selectedQuestionIds, durationMinutes);
         const refreshed = await assignmentService.getAll();
         setAssignments(refreshed);
         return;
@@ -381,6 +387,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         roleApplied: candidate?.roleApplied || 'Applicant',
         quizId: quiz.id,
         quizTitle: quiz.title,
+        difficulty: quiz.difficulty,
+        durationMinutes: durationMinutes || quiz.timeLimitMinutes,
         selectedQuestionIds: selectedQuestionIds,
         status: 'pending',
         totalQuestions: selectedQuestionIds.length,

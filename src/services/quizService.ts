@@ -21,15 +21,37 @@ export const quizService = {
           oq.category.toLowerCase().trim() === (q.category || '').toLowerCase().trim()
       );
 
+      let cleanDesc = q.description || '';
+      let difficulty: 1 | 2 | 3 = matchedOcQuiz?.difficulty || 2;
+      let supportedClassifications = q.supported_classifications || matchedOcQuiz?.supportedClassifications || [];
+
+      if (cleanDesc.includes('[meta:')) {
+        const match = cleanDesc.match(/\[meta:([^\]]+)\]/);
+        if (match) {
+          const metaStr = match[1];
+          const parts = metaStr.split('|');
+          for (const p of parts) {
+            if (p.startsWith('diff=')) {
+              const d = parseInt(p.replace('diff=', ''), 10);
+              if (d === 1 || d === 2 || d === 3) difficulty = d as 1 | 2 | 3;
+            } else if (p.startsWith('roles=')) {
+              const roles = p.replace('roles=', '').split(';').map((s: string) => s.trim()).filter(Boolean);
+              if (roles.length > 0) supportedClassifications = roles;
+            }
+          }
+          cleanDesc = cleanDesc.replace(/\[meta:[^\]]+\]/, '').trim();
+        }
+      }
+
       return {
         id: q.id,
         title: q.title,
         category: q.category,
-        description: q.description || '',
-        timeLimitMinutes: q.time_limit_minutes || 20,
+        description: cleanDesc,
+        difficulty,
+        timeLimitMinutes: q.time_limit_minutes || 60,
         createdAt: q.created_at ? q.created_at.split('T')[0] : '',
-        supportedClassifications:
-          q.supported_classifications || matchedOcQuiz?.supportedClassifications || [],
+        supportedClassifications,
         questions: (q.questions || []).map((quest: any) => ({
           id: quest.id,
           text: quest.text,
@@ -43,13 +65,22 @@ export const quizService = {
   },
 
   async create(quizData: Omit<Quiz, 'id' | 'createdAt'>): Promise<Quiz> {
+    const metaParts: string[] = [];
+    if (quizData.difficulty) metaParts.push(`diff=${quizData.difficulty}`);
+    if (quizData.supportedClassifications && quizData.supportedClassifications.length > 0) {
+      metaParts.push(`roles=${quizData.supportedClassifications.join(';')}`);
+    }
+    const fullDesc = metaParts.length > 0
+      ? `${quizData.description || ''}\n\n[meta:${metaParts.join('|')}]`.trim()
+      : quizData.description || '';
+
     const { data: quiz, error: quizError } = await supabase
       .from('quizzes')
       .insert({
         title: quizData.title,
         category: quizData.category,
-        description: quizData.description,
-        time_limit_minutes: quizData.timeLimitMinutes || 20,
+        description: fullDesc,
+        time_limit_minutes: quizData.timeLimitMinutes || 60,
       })
       .select()
       .single();
@@ -82,8 +113,23 @@ export const quizService = {
     const toUpdate: Record<string, any> = {};
     if (updatedData.title !== undefined) toUpdate.title = updatedData.title;
     if (updatedData.category !== undefined) toUpdate.category = updatedData.category;
-    if (updatedData.description !== undefined) toUpdate.description = updatedData.description;
     if (updatedData.timeLimitMinutes !== undefined) toUpdate.time_limit_minutes = updatedData.timeLimitMinutes;
+
+    if (
+      updatedData.description !== undefined ||
+      updatedData.difficulty !== undefined ||
+      updatedData.supportedClassifications !== undefined
+    ) {
+      const metaParts: string[] = [];
+      if (updatedData.difficulty) metaParts.push(`diff=${updatedData.difficulty}`);
+      if (updatedData.supportedClassifications && updatedData.supportedClassifications.length > 0) {
+        metaParts.push(`roles=${updatedData.supportedClassifications.join(';')}`);
+      }
+      const rawDesc = updatedData.description !== undefined ? updatedData.description : '';
+      toUpdate.description = metaParts.length > 0
+        ? `${rawDesc}\n\n[meta:${metaParts.join('|')}]`.trim()
+        : rawDesc;
+    }
 
     if (Object.keys(toUpdate).length > 0) {
       const { error } = await supabase
@@ -137,12 +183,36 @@ export const quizService = {
 
     if (error) throw error;
 
+    let cleanDesc = data.description || '';
+    let difficulty: 1 | 2 | 3 = 2;
+    let supportedClassifications: string[] = [];
+
+    if (cleanDesc.includes('[meta:')) {
+      const match = cleanDesc.match(/\[meta:([^\]]+)\]/);
+      if (match) {
+        const metaStr = match[1];
+        const parts = metaStr.split('|');
+        for (const p of parts) {
+          if (p.startsWith('diff=')) {
+            const d = parseInt(p.replace('diff=', ''), 10);
+            if (d === 1 || d === 2 || d === 3) difficulty = d as 1 | 2 | 3;
+          } else if (p.startsWith('roles=')) {
+            const roles = p.replace('roles=', '').split(';').map((s: string) => s.trim()).filter(Boolean);
+            if (roles.length > 0) supportedClassifications = roles;
+          }
+        }
+        cleanDesc = cleanDesc.replace(/\[meta:[^\]]+\]/, '').trim();
+      }
+    }
+
     return {
       id: data.id,
       title: data.title,
       category: data.category,
-      description: data.description || '',
-      timeLimitMinutes: data.time_limit_minutes || 20,
+      description: cleanDesc,
+      difficulty,
+      supportedClassifications,
+      timeLimitMinutes: data.time_limit_minutes || 60,
       createdAt: data.created_at ? data.created_at.split('T')[0] : '',
       questions: (data.questions || []).map((quest: any) => ({
         id: quest.id,

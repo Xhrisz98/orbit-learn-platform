@@ -9,9 +9,13 @@ import {
   Download,
   FileSpreadsheet,
   FolderPlus,
+  Shield,
+  Zap,
+  Award,
 } from 'lucide-react';
 import { downloadCsvTemplate, parseQuestionsCsv } from '../../utils/csvParser';
 import { getLocalizedArea } from '../../utils/areaLocalization';
+import { orangeCountyAreas } from '../../data/orangeCountyData';
 
 interface Props {
   isOpen: boolean;
@@ -25,7 +29,9 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
-  const [timeLimitMinutes, setTimeLimitMinutes] = useState(20);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(60);
+  const [difficulty, setDifficulty] = useState<1 | 2 | 3>(2);
+  const [supportedClassifications, setSupportedClassifications] = useState<string[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
 
   // New Area Modal state
@@ -43,13 +49,17 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
         setTitle(quizToEdit.title);
         setCategory(quizToEdit.category);
         setDescription(quizToEdit.description);
-        setTimeLimitMinutes(quizToEdit.timeLimitMinutes || 20);
+        setTimeLimitMinutes(quizToEdit.timeLimitMinutes || 60);
+        setDifficulty(quizToEdit.difficulty || 2);
+        setSupportedClassifications(quizToEdit.supportedClassifications || []);
         setQuestions(JSON.parse(JSON.stringify(quizToEdit.questions)));
       } else {
         setTitle('');
         setCategory(areas[0]?.name || '');
         setDescription('');
-        setTimeLimitMinutes(20);
+        setTimeLimitMinutes(60);
+        setDifficulty(2);
+        setSupportedClassifications([]);
         setQuestions([
           {
             id: `q-${Date.now()}-1`,
@@ -97,7 +107,7 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
       const text = event.target?.result as string;
       if (!text) return;
 
-      const { questions: parsed, errors } = parseQuestionsCsv(text);
+      const { questions: parsed, errors, difficulty: parsedDiff, targetRoles } = parseQuestionsCsv(text);
       if (errors.length > 0 && parsed.length === 0) {
         alert(t.recruiter.createQuizModal.csvImportError.replace('{errors}', errors.join('\n')));
         return;
@@ -106,6 +116,11 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
       const isSingleEmpty = questions.length === 1 && !questions[0].text.trim();
       const combined = isSingleEmpty ? parsed : [...questions, ...parsed];
       setQuestions(combined);
+
+      if (parsedDiff) setDifficulty(parsedDiff);
+      if (targetRoles && targetRoles.length > 0) {
+        setSupportedClassifications(prev => Array.from(new Set([...prev, ...targetRoles])));
+      }
 
       setCsvFeedback(
         t.recruiter.createQuizModal.csvImportSuccess.replace('{count}', String(parsed.length))
@@ -208,6 +223,8 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
         category: category || 'General Skills',
         description,
         timeLimitMinutes,
+        difficulty,
+        supportedClassifications,
         questions,
       });
     } else {
@@ -216,12 +233,17 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
         category: category || 'General Skills',
         description,
         timeLimitMinutes,
+        difficulty,
+        supportedClassifications,
         questions,
       });
     }
 
     onClose();
   };
+
+  const currentAreaObj = areas.find(a => a.name === category) || orangeCountyAreas.find(a => a.name === category);
+  const availableClassifications = currentAreaObj?.classifications || [];
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
@@ -304,6 +326,127 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
                 onChange={e => setTimeLimitMinutes(Number(e.target.value))}
                 className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
               />
+            </div>
+
+            {/* Technical Difficulty Level */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                {t.recruiter.createQuizModal.fieldDifficulty} *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDifficulty(1)}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                    difficulty === 1
+                      ? 'bg-emerald-50 border-emerald-500 text-emerald-800 ring-2 ring-emerald-500/20 shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  <Shield className={`w-4 h-4 shrink-0 ${difficulty === 1 ? 'text-emerald-600' : 'text-slate-400'}`} />
+                  <span className="truncate">{t.recruiter.createQuizModal.diffLevel1}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficulty(2)}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                    difficulty === 2
+                      ? 'bg-blue-50 border-[#2368f5] text-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  <Zap className={`w-4 h-4 shrink-0 ${difficulty === 2 ? 'text-[#2368f5]' : 'text-slate-400'}`} />
+                  <span className="truncate">{t.recruiter.createQuizModal.diffLevel2}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficulty(3)}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                    difficulty === 3
+                      ? 'bg-purple-50 border-purple-500 text-purple-800 ring-2 ring-purple-500/20 shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  <Award className={`w-4 h-4 shrink-0 ${difficulty === 3 ? 'text-purple-600' : 'text-slate-400'}`} />
+                  <span className="truncate">{t.recruiter.createQuizModal.diffLevel3}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Dependent County of Orange Classifications */}
+            <div className="sm:col-span-2">
+              <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                <label className="text-xs font-semibold text-slate-800">
+                  {t.recruiter.createQuizModal.supportedRolesLabel}
+                </label>
+                {availableClassifications.length > 0 && availableClassifications.some(c => !supportedClassifications.includes(c)) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSupportedClassifications(prev => Array.from(new Set([...prev, ...availableClassifications])));
+                    }}
+                    className="text-[11px] font-semibold text-[#2368f5] hover:text-[#144cc0] cursor-pointer"
+                  >
+                    + {language === 'es' ? 'Agregar todas las clasificaciones de esta área' : 'Add all classifications for this area'}
+                  </button>
+                )}
+              </div>
+
+              {availableClassifications.length > 0 ? (
+                <div className="space-y-2">
+                  <select
+                    value=""
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val && !supportedClassifications.includes(val)) {
+                        setSupportedClassifications(prev => [...prev, val]);
+                      }
+                    }}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
+                  >
+                    <option value="" disabled>
+                      {t.recruiter.createQuizModal.selectRolesPlaceholder}
+                    </option>
+                    {availableClassifications
+                      .filter(c => !supportedClassifications.includes(c))
+                      .map(c => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                  </select>
+
+                  {/* Render chips */}
+                  {supportedClassifications.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-32 overflow-y-auto">
+                      {supportedClassifications.map(role => (
+                        <span
+                          key={role}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-[#2368f5] border border-blue-200 shadow-2xs"
+                        >
+                          <span className="truncate max-w-xs">{role}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSupportedClassifications(prev => prev.filter(r => r !== role))}
+                            className="text-blue-400 hover:text-blue-700 cursor-pointer shrink-0"
+                            title="Remove role"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-500 italic">
+                      {t.recruiter.createQuizModal.noRolesAdded}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-500 italic">
+                  {t.recruiter.createQuizModal.noRolesAdded}
+                </p>
+              )}
             </div>
 
             <div className="sm:col-span-2">

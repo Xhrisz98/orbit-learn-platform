@@ -17,13 +17,17 @@ export const candidateService = {
     return (data || []).map((c: any) => {
       let gender: 'male' | 'female' = 'male';
       let area = c.area || '';
+      let secondaryAreas: string[] = [];
 
       if (c.avatar?.startsWith('gender:')) {
         const raw = c.avatar.replace('gender:', '');
-        const [gPart, aPart] = raw.split('|');
-        if (gPart === 'female' || gPart === 'male') gender = gPart;
-        if (aPart?.startsWith('area:')) {
-          area = aPart.replace('area:', '');
+        const parts = raw.split('|');
+        for (const p of parts) {
+          if (p === 'female' || p === 'male') gender = p;
+          else if (p.startsWith('area:')) area = p.replace('area:', '');
+          else if (p.startsWith('sec:')) {
+            secondaryAreas = p.replace('sec:', '').split(';').map((s: string) => s.trim()).filter(Boolean);
+          }
         }
       } else {
         gender = resolveCandidateGender({ name: c.name, avatar: c.avatar });
@@ -35,6 +39,7 @@ export const candidateService = {
         email: c.email,
         roleApplied: c.role_applied,
         area: area || undefined,
+        secondaryAreas: secondaryAreas.length > 0 ? secondaryAreas : undefined,
         avatar: c.avatar || `gender:${gender}`,
         gender,
         registeredAt: c.registered_at ? c.registered_at.split('T')[0] : '',
@@ -42,8 +47,11 @@ export const candidateService = {
     });
   },
 
-  async create(candidateData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string }): Promise<Candidate> {
-    const avatar = `gender:${candidateData.gender || 'male'}${candidateData.area ? `|area:${candidateData.area}` : ''}`;
+  async create(candidateData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string; secondaryAreas?: string[] }): Promise<Candidate> {
+    const secPart = candidateData.secondaryAreas && candidateData.secondaryAreas.length > 0
+      ? `|sec:${candidateData.secondaryAreas.join(';')}`
+      : '';
+    const avatar = `gender:${candidateData.gender || 'male'}${candidateData.area ? `|area:${candidateData.area}` : ''}${secPart}`;
 
     const { data, error } = await supabase
       .from('candidates')
@@ -64,6 +72,7 @@ export const candidateService = {
       email: data.email,
       roleApplied: data.role_applied,
       area: candidateData.area,
+      secondaryAreas: candidateData.secondaryAreas,
       avatar: data.avatar,
       gender: candidateData.gender || 'male',
       registeredAt: data.registered_at ? data.registered_at.split('T')[0] : '',
@@ -72,9 +81,12 @@ export const candidateService = {
 
   async update(
     candidateId: string,
-    candidateData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string }
+    candidateData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string; secondaryAreas?: string[] }
   ): Promise<Candidate> {
-    const avatar = `gender:${candidateData.gender}${candidateData.area ? `|area:${candidateData.area}` : ''}`;
+    const secPart = candidateData.secondaryAreas && candidateData.secondaryAreas.length > 0
+      ? `|sec:${candidateData.secondaryAreas.join(';')}`
+      : '';
+    const avatar = `gender:${candidateData.gender}${candidateData.area ? `|area:${candidateData.area}` : ''}${secPart}`;
 
     const { data, error } = await supabase
       .from('candidates')
@@ -96,6 +108,7 @@ export const candidateService = {
       email: data.email,
       roleApplied: data.role_applied,
       area: candidateData.area,
+      secondaryAreas: candidateData.secondaryAreas,
       avatar: data.avatar,
       gender: candidateData.gender,
       registeredAt: data.registered_at ? data.registered_at.split('T')[0] : '',

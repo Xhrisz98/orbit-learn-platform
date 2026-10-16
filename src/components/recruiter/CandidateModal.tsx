@@ -17,6 +17,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [selectedArea, setSelectedArea] = useState('');
+  const [secondaryAreas, setSecondaryAreas] = useState<string[]>([]);
   const [selectedClassification, setSelectedClassification] = useState('');
   const [isCustomRole, setIsCustomRole] = useState(false);
   const [customRoleText, setCustomRoleText] = useState('');
@@ -33,6 +34,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
 
         const candArea = candidateToEdit.area || (areas.length > 0 ? areas[0].name : '');
         setSelectedArea(candArea);
+        setSecondaryAreas(candidateToEdit.secondaryAreas || []);
 
         const areaObj = areas.find(a => a.name === candArea);
         const cls = areaObj?.classifications || [];
@@ -51,6 +53,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
         setGender('male');
         setCustomRoleText('');
         setIsCustomRole(false);
+        setSecondaryAreas([]);
 
         if (areas.length > 0) {
           const initialArea = areas[0].name;
@@ -72,6 +75,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
   // Handle area change
   const handleAreaChange = (newAreaName: string) => {
     setSelectedArea(newAreaName);
+    setSecondaryAreas(prev => prev.filter(a => a !== newAreaName));
     const areaObj = areas.find(a => a.name === newAreaName);
     const cls = areaObj?.classifications || [];
     if (cls.length > 0) {
@@ -99,6 +103,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
         name: name.trim(),
         email: email.trim(),
         area: selectedArea,
+        secondaryAreas,
         roleApplied: finalRole || 'General Applicant',
         gender,
       });
@@ -107,6 +112,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
         name: name.trim(),
         email: email.trim(),
         area: selectedArea,
+        secondaryAreas,
         roleApplied: finalRole || 'General Applicant',
         gender,
       });
@@ -116,6 +122,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
     setEmail('');
     setCustomRoleText('');
     setIsCustomRole(false);
+    setSecondaryAreas([]);
     setGender('male');
     onClose();
   };
@@ -178,7 +185,7 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
             />
           </div>
 
-          {/* Area Selection */}
+          {/* Primary Area Selection */}
           <div>
             <label className="block text-xs font-semibold text-slate-800 mb-1 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-[#2368f5]" />
@@ -195,6 +202,62 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Secondary Areas / Additional Departments Selection */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-800 mb-1 flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-slate-400" />
+              <span>{t.recruiter.createCandidateModal.secondaryAreasLabel}</span>
+            </label>
+
+            <select
+              value=""
+              onChange={e => {
+                const val = e.target.value;
+                if (val && !secondaryAreas.includes(val) && val !== selectedArea) {
+                  setSecondaryAreas(prev => [...prev, val]);
+                }
+              }}
+              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] font-medium"
+            >
+              <option value="" disabled>
+                {t.recruiter.createCandidateModal.selectSecondaryAreaPlaceholder}
+              </option>
+              {areas
+                .filter(a => a.name !== selectedArea && !secondaryAreas.includes(a.name))
+                .map(a => (
+                  <option key={a.id} value={a.name}>
+                    {getLocalizedArea(a.name, language)}
+                  </option>
+                ))}
+            </select>
+
+            {/* Badges with X */}
+            {secondaryAreas.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                {secondaryAreas.map(secArea => (
+                  <span
+                    key={secArea}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs"
+                  >
+                    <span>{getLocalizedArea(secArea, language)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSecondaryAreas(prev => prev.filter(a => a !== secArea))}
+                      className="text-indigo-400 hover:text-indigo-700 cursor-pointer"
+                      title="Remove department"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-400 italic mt-1.5">
+                {t.recruiter.createCandidateModal.noSecondaryAreas}
+              </p>
+            )}
           </div>
 
           {/* Sub-area / Classification Selection */}

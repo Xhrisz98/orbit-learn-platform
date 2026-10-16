@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   TrendingUp,
   Award,
+  Shield,
+  Zap,
   PlusCircle,
   Search,
   BookOpen,
@@ -473,14 +475,14 @@ export const RecruiterDashboard: React.FC = () => {
 
           {/* Results Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[700px]">
+            <table className="w-full text-left text-xs min-w-[750px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
                   <th className="p-4">{t.recruiter.pipeline.colCandidate}</th>
                   <th className="p-4">{t.recruiter.pipeline.colQuiz}</th>
                   <th className="p-4">{t.recruiter.pipeline.colStage}</th>
-                  <th className="p-4">{t.recruiter.pipeline.colScore}</th>
-                  <th className="p-4">{t.recruiter.pipeline.colHits}</th>
+                  <th className="p-4 text-center">{t.recruiter.pipeline.colScore}</th>
+                  <th className="p-4 text-center">{t.recruiter.pipeline.colHits}</th>
                   <th className="p-4 text-right">{t.recruiter.pipeline.colAudit}</th>
                 </tr>
               </thead>
@@ -562,12 +564,40 @@ export const RecruiterDashboard: React.FC = () => {
                           })()}
                         </td>
 
-                        {/* 2. Quiz Column */}
+                        {/* 2. Quiz Column with Difficulty Badge & Date */}
                         <td className="p-4">
-                          <p className="font-medium text-slate-900 max-w-xs truncate">
+                          <p className="font-semibold text-slate-900 max-w-xs truncate">
                             {getLocalizedArea(item.quizTitle, language)}
                           </p>
-                          <p className="text-[11px] text-slate-400">{item.assignedAt}</p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {(() => {
+                              const foundQuiz = quizzes.find(q => q.id === item.quizId);
+                              const diff = item.difficulty || foundQuiz?.difficulty || 2;
+                              if (diff === 1) {
+                                return (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    <Shield className="w-3 h-3 text-emerald-600" />
+                                    <span>{language === 'es' ? 'Fundamental' : 'Fundamental'}</span>
+                                  </span>
+                                );
+                              }
+                              if (diff === 3) {
+                                return (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200">
+                                    <Award className="w-3 h-3 text-purple-600" />
+                                    <span>{language === 'es' ? 'Avanzado' : 'Advanced'}</span>
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-[#2368f5] border border-blue-200">
+                                  <Zap className="w-3 h-3 text-[#2368f5]" />
+                                  <span>{language === 'es' ? 'Intermedio' : 'Intermediate'}</span>
+                                </span>
+                              );
+                            })()}
+                            <span className="text-[11px] text-slate-400">{item.assignedAt}</span>
+                          </div>
                         </td>
 
                         {/* 3. Testing Stage / Status Column */}
@@ -608,11 +638,11 @@ export const RecruiterDashboard: React.FC = () => {
                           )}
                         </td>
 
-                        {/* 4. Overall Score Column: Percentage only, text removed */}
-                        <td className="p-4">
+                        {/* 4. Overall Score Column: Percentage only, font-mono tabular-nums */}
+                        <td className="p-4 text-center">
                           {item.status === 'completed' ? (
                             <span
-                              className={`inline-block text-xs font-black px-2.5 py-1 rounded-lg ${
+                              className={`inline-block font-mono tabular-nums text-xs font-black px-2.5 py-1 rounded-lg ${
                                 (item.score ?? 0) >= 75
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : (item.score ?? 0) >= 50
@@ -623,18 +653,18 @@ export const RecruiterDashboard: React.FC = () => {
                               {item.score}%
                             </span>
                           ) : (
-                            <span className="text-slate-400 font-mono text-xs">--</span>
+                            <span className="text-slate-400 font-mono tabular-nums text-xs">--</span>
                           )}
                         </td>
 
-                        {/* 5. Hits Column */}
-                        <td className="p-4">
+                        {/* 5. Hits Column: font-mono tabular-nums */}
+                        <td className="p-4 text-center">
                           {item.status === 'completed' ? (
-                            <span className="font-semibold text-slate-700">
+                            <span className="font-mono tabular-nums font-semibold text-slate-700">
                               {item.correctAnswersCount} / {item.totalQuestions}
                             </span>
                           ) : (
-                            <span className="text-slate-400">0 / {item.totalQuestions}</span>
+                            <span className="font-mono tabular-nums text-slate-400">0 / {item.totalQuestions}</span>
                           )}
                         </td>
 

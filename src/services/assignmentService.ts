@@ -13,47 +13,64 @@ export const assignmentService = {
       throw error;
     }
 
-    return (data || []).map((a: any) => ({
-      id: a.id,
-      candidateId: a.candidate_id,
-      candidateName: a.candidate?.name || 'Candidate',
-      candidateEmail: a.candidate?.email || '',
-      roleApplied: a.candidate?.role_applied || '',
-      quizId: a.quiz_id,
-      quizTitle: a.quiz?.title || 'Assessment',
-      selectedQuestionIds: a.selected_question_ids || [],
-      status: a.status,
-      reviewStatus:
-        a.answers?._review_status ||
-        (a.status === 'completed'
-          ? (a.score ?? 0) >= 50
-            ? 'stand_by'
-            : 'rejected'
-          : undefined),
-      score: a.score,
-      totalQuestions: a.total_questions,
-      correctAnswersCount: a.correct_answers_count,
-      passedThreshold: a.passed_threshold,
-      answers: a.answers || {},
-      assignedAt: a.assigned_at
-        ? new Date(a.assigned_at).toLocaleString([], {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : '',
-      completedAt: a.completed_at
-        ? new Date(a.completed_at).toLocaleString([], {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : undefined,
-    }));
+    return (data || []).map((a: any) => {
+      let difficulty: 1 | 2 | 3 | undefined = undefined;
+      if (a.quiz?.description && a.quiz.description.includes('[meta:')) {
+        const match = a.quiz.description.match(/\[meta:([^\]]+)\]/);
+        if (match) {
+          for (const p of match[1].split('|')) {
+            if (p.startsWith('diff=')) {
+              const d = parseInt(p.replace('diff=', ''), 10);
+              if (d === 1 || d === 2 || d === 3) difficulty = d as 1 | 2 | 3;
+            }
+          }
+        }
+      }
+
+      return {
+        id: a.id,
+        candidateId: a.candidate_id,
+        candidateName: a.candidate?.name || 'Candidate',
+        candidateEmail: a.candidate?.email || '',
+        roleApplied: a.candidate?.role_applied || '',
+        quizId: a.quiz_id,
+        quizTitle: a.quiz?.title || 'Assessment',
+        difficulty,
+        durationMinutes: a.answers?._duration_minutes,
+        selectedQuestionIds: a.selected_question_ids || [],
+        status: a.status,
+        reviewStatus:
+          a.answers?._review_status ||
+          (a.status === 'completed'
+            ? (a.score ?? 0) >= 50
+              ? 'stand_by'
+              : 'rejected'
+            : undefined),
+        score: a.score,
+        totalQuestions: a.total_questions,
+        correctAnswersCount: a.correct_answers_count,
+        passedThreshold: a.passed_threshold,
+        answers: a.answers || {},
+        assignedAt: a.assigned_at
+          ? new Date(a.assigned_at).toLocaleString([], {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '',
+        completedAt: a.completed_at
+          ? new Date(a.completed_at).toLocaleString([], {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : undefined,
+      };
+    });
   },
 
   async updateReviewStatus(
@@ -69,7 +86,7 @@ export const assignmentService = {
     if (error) throw error;
   },
 
-  async assignCustom(candidateIds: string[], quizId: string, selectedQuestionIds: string[]): Promise<void> {
+  async assignCustom(candidateIds: string[], quizId: string, selectedQuestionIds: string[], durationMinutes?: number): Promise<void> {
     const inserts = candidateIds.map(candId => ({
       candidate_id: candId,
       quiz_id: quizId,
@@ -78,7 +95,7 @@ export const assignmentService = {
       total_questions: selectedQuestionIds.length,
       correct_answers_count: 0,
       passed_threshold: false,
-      answers: {},
+      answers: durationMinutes ? { _duration_minutes: durationMinutes } : {},
     }));
 
     const { error } = await supabase.from('assessment_assignments').insert(inserts);

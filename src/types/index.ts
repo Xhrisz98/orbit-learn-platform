@@ -28,6 +28,7 @@ export interface Quiz {
   category: string;
   description: string;
   supportedClassifications?: string[];
+  difficulty?: 1 | 2 | 3; // 1 = Fundamental/Entry, 2 = Intermediate/Mid-Level, 3 = Advanced/Senior
   timeLimitMinutes?: number;
   questions: Question[];
   createdAt: string;
@@ -38,7 +39,8 @@ export interface Candidate {
   name: string;
   email: string;
   roleApplied: string;
-  area?: string;
+  area?: string; // Primary department / area
+  secondaryAreas?: string[]; // Additional departments / secondary areas
   avatar: string;
   gender?: 'male' | 'female';
   registeredAt: string;
@@ -55,6 +57,8 @@ export interface AssessmentAssignment {
   roleApplied: string;
   quizId: string;
   quizTitle: string;
+  difficulty?: 1 | 2 | 3;
+  durationMinutes?: number;
   selectedQuestionIds?: string[]; // IDs of questions manually picked by recruiter
   status: AssessmentStatus;
   reviewStatus?: RecruiterReviewStatus;
