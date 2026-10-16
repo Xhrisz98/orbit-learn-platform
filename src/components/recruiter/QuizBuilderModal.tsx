@@ -16,6 +16,7 @@ import {
 import { downloadCsvTemplate, parseQuestionsCsv } from '../../utils/csvParser';
 import { getLocalizedArea } from '../../utils/areaLocalization';
 import { orangeCountyAreas } from '../../data/orangeCountyData';
+import { CustomSelect } from '../common/CustomSelect';
 
 interface Props {
   isOpen: boolean;
@@ -299,19 +300,16 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
                   <span>{t.recruiter.createQuizModal.newAreaBtn}</span>
                 </button>
               </div>
-              <select
-                required
+              <CustomSelect
                 value={category}
-                onChange={e => setCategory(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#2368f5] bg-white font-medium"
-              >
-                <option value="">{t.recruiter.createQuizModal.selectCategoryPlaceholder}</option>
-                {areas.map(a => (
-                  <option key={a.id} value={a.name}>
-                    {getLocalizedArea(a.name, language)}
-                  </option>
-                ))}
-              </select>
+                onChange={val => setCategory(val)}
+                placeholder={t.recruiter.createQuizModal.selectCategoryPlaceholder}
+                className="w-full"
+                options={areas.map(a => ({
+                  value: a.name,
+                  label: getLocalizedArea(a.name, language),
+                }))}
+              />
             </div>
 
             <div>
@@ -394,27 +392,22 @@ export const QuizBuilderModal: React.FC<Props> = ({ isOpen, onClose, quizToEdit 
 
               {availableClassifications.length > 0 ? (
                 <div className="space-y-2">
-                  <select
+                  <CustomSelect
                     value=""
-                    onChange={e => {
-                      const val = e.target.value;
+                    onChange={val => {
                       if (val && !supportedClassifications.includes(val)) {
                         setSupportedClassifications(prev => [...prev, val]);
                       }
                     }}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-                  >
-                    <option value="" disabled>
-                      {t.recruiter.createQuizModal.selectRolesPlaceholder}
-                    </option>
-                    {availableClassifications
+                    placeholder={t.recruiter.createQuizModal.selectRolesPlaceholder}
+                    className="w-full"
+                    options={availableClassifications
                       .filter(c => !supportedClassifications.includes(c))
-                      .map(c => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                  </select>
+                      .map(c => ({
+                        value: c,
+                        label: c,
+                      }))}
+                  />
 
                   {/* Render chips */}
                   {supportedClassifications.length > 0 ? (

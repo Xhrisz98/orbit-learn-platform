@@ -26,6 +26,7 @@ import {
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
 import { resolveCandidateGender, getCandidateInitials } from '../../utils/genderHelper';
+import { CustomSelect } from '../common/CustomSelect';
 
 interface ConfiguredBank {
   quizId: string;
@@ -460,35 +461,35 @@ export const AssignQuizModal: React.FC<Props> = ({
                     <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                       {t.recruiter.assignModal.filterDemandAreaLabel}
                     </label>
-                    <select
+                    <CustomSelect
                       value={filterArea}
-                      onChange={e => setFilterArea(e.target.value)}
-                      className="w-full text-xs p-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-                    >
-                      <option value="">{t.recruiter.assignModal.allAreasOption}</option>
-                      {candidateAreas.map(area => (
-                        <option key={area} value={area}>
-                          {getLocalizedArea(area, language)}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={val => setFilterArea(val)}
+                      className="w-full"
+                      options={[
+                        { value: '', label: t.recruiter.assignModal.allAreasOption },
+                        ...candidateAreas.map(area => ({
+                          value: area,
+                          label: getLocalizedArea(area, language),
+                        })),
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                       {t.recruiter.assignModal.filterDemandRoleLabel}
                     </label>
-                    <select
+                    <CustomSelect
                       value={filterRole}
-                      onChange={e => setFilterRole(e.target.value)}
-                      className="w-full text-xs p-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-                    >
-                      <option value="">{t.recruiter.assignModal.allRolesOption}</option>
-                      {candidateRoles.map(role => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={val => setFilterRole(val)}
+                      className="w-full"
+                      options={[
+                        { value: '', label: t.recruiter.assignModal.allRolesOption },
+                        ...candidateRoles.map(role => ({
+                          value: role,
+                          label: role,
+                        })),
+                      ]}
+                    />
                   </div>
                 </div>
               </div>
@@ -617,29 +618,30 @@ export const AssignQuizModal: React.FC<Props> = ({
                         <Layers className="w-3.5 h-3.5 text-[#2368f5]" />
                         <span>{t.recruiter.assignModal.step2BranchLabel}</span>
                       </label>
-                      <select
+                      <CustomSelect
                         value={selectedBranch}
-                        onChange={e => handleBranchChange(e.target.value)}
-                        className="w-full text-xs font-medium p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-                      >
-                        <option value="">
-                          {t.recruiter.assignModal.allBranchesOption} ({quizzes.length})
-                        </option>
-                        {availableBranches.map(branch => {
-                          const count = quizzes.filter(
-                            q => q.category.toLowerCase().trim() === branch.toLowerCase().trim()
-                          ).length;
-                          const isCandidateDept = candidateAssociatedAreas.some(
-                            a => a.toLowerCase().trim() === branch.toLowerCase().trim()
-                          );
-                          return (
-                            <option key={branch} value={branch}>
-                              {getLocalizedArea(branch, language)} ({count}){' '}
-                              {isCandidateDept ? '(Suggested)' : ''}
-                            </option>
-                          );
-                        })}
-                      </select>
+                        onChange={val => handleBranchChange(val)}
+                        className="w-full"
+                        options={[
+                          {
+                            value: '',
+                            label: `${t.recruiter.assignModal.allBranchesOption} (${quizzes.length})`,
+                          },
+                          ...availableBranches.map(branch => {
+                            const count = quizzes.filter(
+                              q => q.category.toLowerCase().trim() === branch.toLowerCase().trim()
+                            ).length;
+                            const isCandidateDept = candidateAssociatedAreas.some(
+                              a => a.toLowerCase().trim() === branch.toLowerCase().trim()
+                            );
+                            return {
+                              value: branch,
+                              label: `${getLocalizedArea(branch, language)} (${count})`,
+                              badge: isCandidateDept ? (language === 'es' ? 'Sugerido' : 'Suggested') : undefined,
+                            };
+                          }),
+                        ]}
+                      />
                     </div>
 
                     {/* Level 2: Question Banks in that Branch */}
@@ -648,25 +650,17 @@ export const AssignQuizModal: React.FC<Props> = ({
                         <BookOpen className="w-3.5 h-3.5 text-[#2368f5]" />
                         <span>{t.recruiter.assignModal.step2BankLabel}</span>
                       </label>
-                      <select
+                      <CustomSelect
                         value={selectedQuizId}
-                        onChange={e => setSelectedQuizId(e.target.value)}
+                        onChange={val => setSelectedQuizId(val)}
                         disabled={branchQuizzes.length === 0}
-                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] disabled:bg-slate-100 disabled:text-slate-400"
-                      >
-                        {branchQuizzes.length === 0 ? (
-                          <option value="">
-                            {t.recruiter.assignModal.selectBankPlaceholder}
-                          </option>
-                        ) : (
-                          branchQuizzes.map(q => (
-                            <option key={q.id} value={q.id}>
-                              {getLocalizedArea(q.title, language)} ({q.questions.length}{' '}
-                              {t.recruiter.assignModal.questionsInBank})
-                            </option>
-                          ))
-                        )}
-                      </select>
+                        placeholder={t.recruiter.assignModal.selectBankPlaceholder}
+                        className="w-full"
+                        options={branchQuizzes.map(q => ({
+                          value: q.id,
+                          label: `${getLocalizedArea(q.title, language)} (${q.questions.length} ${t.recruiter.assignModal.questionsInBank})`,
+                        }))}
+                      />
                     </div>
 
                     {/* Action Button: Add Bank to Suite */}

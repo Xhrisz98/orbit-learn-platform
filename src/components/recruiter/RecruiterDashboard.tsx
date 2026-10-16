@@ -6,6 +6,8 @@ import { CandidateModal } from './CandidateModal';
 import { AssignQuizModal } from './AssignQuizModal';
 import { ResultsAuditModal } from './ResultsAuditModal';
 import { CandidateProfileModal } from './CandidateProfileModal';
+import { CustomSelect } from '../common/CustomSelect';
+import { ModernDateRangePicker } from '../common/ModernDateRangePicker';
 import {
   Users,
   CheckCircle2,
@@ -25,7 +27,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
-  Calendar,
   RotateCcw,
   Briefcase,
   Mars,
@@ -399,64 +400,51 @@ export const RecruiterDashboard: React.FC = () => {
               {/* Status and Score Selectors */}
               <div className="flex flex-wrap items-center gap-2">
                 {/* Status Filter */}
-                <div className="flex items-center gap-1.5">
-                  <Filter className="w-3.5 h-3.5 text-slate-400" />
-                  <select
-                    value={statusFilter}
-                    onChange={e => {
-                      setStatusFilter(e.target.value as any);
-                      setCurrentPage(1);
-                    }}
-                    className="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2368f5] cursor-pointer"
-                  >
-                    <option value="all">{t.recruiter.pipeline.filterStatusAll}</option>
-                    <option value="not_completed">{t.recruiter.pipeline.filterStatusNotCompleted}</option>
-                    <option value="stand_by">{t.recruiter.pipeline.filterStatusStandBy}</option>
-                    <option value="approved">{t.recruiter.pipeline.filterStatusApproved}</option>
-                    <option value="rejected">{t.recruiter.pipeline.filterStatusRejected}</option>
-                  </select>
-                </div>
-
-                {/* Score Filter */}
-                <select
-                  value={scoreFilter}
-                  onChange={e => {
-                    setScoreFilter(e.target.value as any);
+                <CustomSelect
+                  value={statusFilter}
+                  onChange={val => {
+                    setStatusFilter(val as any);
                     setCurrentPage(1);
                   }}
-                  className="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2368f5] cursor-pointer"
-                >
-                  <option value="all">{t.recruiter.pipeline.filterScoreAll}</option>
-                  <option value="top">{t.recruiter.pipeline.filterScoreTop}</option>
-                  <option value="passing">{t.recruiter.pipeline.filterScorePassing}</option>
-                  <option value="low">{t.recruiter.pipeline.filterScoreLow}</option>
-                </select>
+                  icon={<Filter className="w-3.5 h-3.5 text-slate-400" />}
+                  searchable={false}
+                  options={[
+                    { value: 'all', label: t.recruiter.pipeline.filterStatusAll },
+                    { value: 'not_completed', label: t.recruiter.pipeline.filterStatusNotCompleted },
+                    { value: 'stand_by', label: t.recruiter.pipeline.filterStatusStandBy },
+                    { value: 'approved', label: t.recruiter.pipeline.filterStatusApproved },
+                    { value: 'rejected', label: t.recruiter.pipeline.filterStatusRejected },
+                  ]}
+                />
 
-                {/* Date Range Inputs */}
-                <div className="flex items-center gap-1.5 bg-white border border-slate-300 hover:border-[#2368f5] focus-within:border-[#2368f5] focus-within:ring-2 focus-within:ring-[#2368f5]/20 rounded-xl px-2.5 py-1.5 shadow-2xs transition-all">
-                  <Calendar className="w-3.5 h-3.5 text-[#2368f5] shrink-0" />
-                  <input
-                    type="date"
-                    title={t.recruiter.pipeline.filterDateFrom}
-                    value={dateFrom}
-                    onChange={e => {
-                      setDateFrom(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="text-xs font-medium text-slate-700 bg-transparent focus:outline-none cursor-pointer"
-                  />
-                  <span className="text-slate-300 font-bold">•</span>
-                  <input
-                    type="date"
-                    title={t.recruiter.pipeline.filterDateTo}
-                    value={dateTo}
-                    onChange={e => {
-                      setDateTo(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="text-xs font-medium text-slate-700 bg-transparent focus:outline-none cursor-pointer"
-                  />
-                </div>
+                {/* Score Filter */}
+                <CustomSelect
+                  value={scoreFilter}
+                  onChange={val => {
+                    setScoreFilter(val as any);
+                    setCurrentPage(1);
+                  }}
+                  searchable={false}
+                  options={[
+                    { value: 'all', label: t.recruiter.pipeline.filterScoreAll },
+                    { value: 'top', label: t.recruiter.pipeline.filterScoreTop },
+                    { value: 'passing', label: t.recruiter.pipeline.filterScorePassing },
+                    { value: 'low', label: t.recruiter.pipeline.filterScoreLow },
+                  ]}
+                />
+
+                {/* Modern Floating Date Range Picker */}
+                <ModernDateRangePicker
+                  startDate={dateFrom}
+                  endDate={dateTo}
+                  onChange={(start, end) => {
+                    setDateFrom(start);
+                    setDateTo(end);
+                    setCurrentPage(1);
+                  }}
+                  language={language}
+                  placeholder={language === 'es' ? 'Filtrar por fecha' : 'Filter by date'}
+                />
 
                 {/* Clear Filters Button */}
                 {hasActiveFilters && (
@@ -494,7 +482,7 @@ export const RecruiterDashboard: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  paginatedPipeline.map(item => {
+                  paginatedPipeline.map((item, idx) => {
                     const effectiveStatus = item.reviewStatus || ((item.score ?? 0) >= 50 ? 'stand_by' : 'rejected');
 
                     return (
@@ -603,33 +591,39 @@ export const RecruiterDashboard: React.FC = () => {
                         {/* 3. Testing Stage / Status Column */}
                         <td className="p-4">
                           {item.status === 'completed' ? (
-                            <div className="relative inline-block">
-                              <select
-                                value={effectiveStatus}
-                                onChange={e => {
-                                  const newStatus = e.target.value as 'stand_by' | 'approved' | 'rejected';
-                                  updateAssignmentReviewStatus(item.id, newStatus);
-                                }}
-                                aria-label={t.recruiter.pipeline.statusDropdownTitle}
-                                title={t.recruiter.pipeline.statusDropdownTitle}
-                                className={`appearance-none text-[11px] font-bold py-1 pl-2.5 pr-6 rounded-full border cursor-pointer transition-colors focus:outline-none focus:ring-1 ${
-                                  effectiveStatus === 'approved'
-                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 focus:ring-emerald-500'
-                                    : effectiveStatus === 'rejected'
-                                    ? 'bg-rose-50 text-rose-800 border-rose-300 focus:ring-rose-500'
-                                    : 'bg-amber-50 text-amber-800 border-amber-300 focus:ring-amber-500'
-                                }`}
-                              >
-                                <option value="stand_by">{t.recruiter.pipeline.statusStandBy}</option>
-                                <option value="approved">{t.recruiter.pipeline.statusApproved}</option>
-                                <option value="rejected">{t.recruiter.pipeline.statusRejected}</option>
-                              </select>
-                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-slate-500">
-                                <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 20 20">
-                                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                                </svg>
-                              </div>
-                            </div>
+                            <CustomSelect
+                              value={effectiveStatus}
+                              onChange={val => {
+                                updateAssignmentReviewStatus(item.id, val as 'stand_by' | 'approved' | 'rejected');
+                              }}
+                              direction={idx >= paginatedPipeline.length - 2 && paginatedPipeline.length > 2 ? 'up' : 'down'}
+                              searchable={false}
+                              title={t.recruiter.pipeline.statusDropdownTitle}
+                              triggerClassName={`py-1 px-3 rounded-full text-[11px] font-bold border transition-colors ${
+                                effectiveStatus === 'approved'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:border-emerald-400'
+                                  : effectiveStatus === 'rejected'
+                                  ? 'bg-rose-50 text-rose-800 border-rose-300 hover:border-rose-400'
+                                  : 'bg-amber-50 text-amber-800 border-amber-300 hover:border-amber-400'
+                              }`}
+                              options={[
+                                {
+                                  value: 'stand_by',
+                                  label: t.recruiter.pipeline.statusStandBy,
+                                  badge: language === 'es' ? 'En espera' : 'Stand By',
+                                },
+                                {
+                                  value: 'approved',
+                                  label: t.recruiter.pipeline.statusApproved,
+                                  badge: language === 'es' ? 'Aprobado' : 'Approved',
+                                },
+                                {
+                                  value: 'rejected',
+                                  label: t.recruiter.pipeline.statusRejected,
+                                  badge: language === 'es' ? 'Rechazado' : 'Rejected',
+                                },
+                              ]}
+                            />
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                               <Clock className="w-3 h-3 text-slate-400" />
@@ -728,20 +722,20 @@ export const RecruiterDashboard: React.FC = () => {
               {/* Page Size Selector: 5, 10 default, 15, 20, 50 */}
               <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
                 <span className="text-xs text-slate-400">{t.recruiter.pipeline.pageSizeLabel}</span>
-                <select
-                  value={pageSize}
-                  onChange={e => {
-                    setPageSize(Number(e.target.value));
+                <CustomSelect
+                  value={String(pageSize)}
+                  onChange={val => {
+                    setPageSize(Number(val));
                     setCurrentPage(1);
                   }}
-                  className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-                >
-                  {[5, 10, 15, 20, 50].map(size => (
-                    <option key={size} value={size}>
-                      {size} {t.recruiter.pipeline.perPage}
-                    </option>
-                  ))}
-                </select>
+                  direction="up"
+                  searchable={false}
+                  triggerClassName="py-1 px-2.5 text-xs font-bold bg-slate-50 border-slate-200 rounded-lg"
+                  options={[5, 10, 15, 20, 50].map(size => ({
+                    value: String(size),
+                    label: `${size} ${t.recruiter.pipeline.perPage}`,
+                  }))}
+                />
               </div>
             </div>
 
@@ -830,21 +824,21 @@ export const RecruiterDashboard: React.FC = () => {
                 />
               </div>
 
-              <select
+              <CustomSelect
                 value={quizCategoryFilter}
-                onChange={e => {
-                  setQuizCategoryFilter(e.target.value);
+                onChange={val => {
+                  setQuizCategoryFilter(val);
                   setCurrentQuizPage(1);
                 }}
-                className="text-xs py-1.5 px-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] cursor-pointer"
-              >
-                <option value="all">{t.recruiter.quizzes.filterAreaAll}</option>
-                {uniqueQuizCategories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {getLocalizedArea(cat, language)}
-                  </option>
-                ))}
-              </select>
+                triggerClassName="py-1.5 px-3 rounded-xl bg-slate-50 border-slate-200"
+                options={[
+                  { value: 'all', label: t.recruiter.quizzes.filterAreaAll },
+                  ...uniqueQuizCategories.map(cat => ({
+                    value: cat,
+                    label: getLocalizedArea(cat, language),
+                  })),
+                ]}
+              />
 
               {(quizSearchQuery !== '' || quizCategoryFilter !== 'all') && (
                 <button
@@ -1028,20 +1022,20 @@ export const RecruiterDashboard: React.FC = () => {
             <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 text-slate-600">
                 <span className="font-semibold">{t.recruiter.quizzes.pageSizeLabel}</span>
-                <select
-                  value={quizPageSize}
-                  onChange={e => {
-                    setQuizPageSize(Number(e.target.value));
+                <CustomSelect
+                  value={String(quizPageSize)}
+                  onChange={val => {
+                    setQuizPageSize(Number(val));
                     setCurrentQuizPage(1);
                   }}
-                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2368f5] cursor-pointer"
-                >
-                  <option value={5}>5 {t.recruiter.quizzes.perPage}</option>
-                  <option value={10}>10 {t.recruiter.quizzes.perPage}</option>
-                  <option value={15}>15 {t.recruiter.quizzes.perPage}</option>
-                  <option value={20}>20 {t.recruiter.quizzes.perPage}</option>
-                  <option value={50}>50 {t.recruiter.quizzes.perPage}</option>
-                </select>
+                  direction="up"
+                  searchable={false}
+                  triggerClassName="px-2.5 py-1 text-xs font-bold rounded-lg border-slate-200"
+                  options={[5, 10, 15, 20, 50].map(size => ({
+                    value: String(size),
+                    label: `${size} ${t.recruiter.quizzes.perPage}`,
+                  }))}
+                />
                 <span className="text-slate-400 ml-1">
                   {t.recruiter.quizzes.showingPage
                     .replace('{from}', String(quizStartIndex + 1))
@@ -1118,23 +1112,24 @@ export const RecruiterDashboard: React.FC = () => {
               </div>
 
               {uniqueCandidateAreas.length > 0 && (
-                <select
+                <CustomSelect
                   value={candAreaFilter}
-                  onChange={e => {
-                    setCandAreaFilter(e.target.value);
+                  onChange={val => {
+                    setCandAreaFilter(val);
                     setCandCurrentPage(1);
                   }}
-                  className="text-xs py-1.5 px-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] cursor-pointer"
-                >
-                  <option value="all">
-                    {language === 'es' ? 'Todas las Áreas' : 'All Professional Areas'}
-                  </option>
-                  {uniqueCandidateAreas.map(areaName => (
-                    <option key={areaName} value={areaName}>
-                      {getLocalizedArea(areaName, language)}
-                    </option>
-                  ))}
-                </select>
+                  triggerClassName="py-1.5 px-3 rounded-xl bg-slate-50 border-slate-200"
+                  options={[
+                    {
+                      value: 'all',
+                      label: language === 'es' ? 'Todas las Áreas' : 'All Professional Areas',
+                    },
+                    ...uniqueCandidateAreas.map(areaName => ({
+                      value: areaName,
+                      label: getLocalizedArea(areaName, language),
+                    })),
+                  ]}
+                />
               )}
 
               {(candSearchQuery !== '' || candAreaFilter !== 'all') && (
@@ -1331,20 +1326,20 @@ export const RecruiterDashboard: React.FC = () => {
 
                 <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
                   <span className="text-xs text-slate-400">{t.recruiter.pipeline.pageSizeLabel}</span>
-                  <select
-                    value={candPageSize}
-                    onChange={e => {
-                      setCandPageSize(Number(e.target.value));
+                  <CustomSelect
+                    value={String(candPageSize)}
+                    onChange={val => {
+                      setCandPageSize(Number(val));
                       setCandCurrentPage(1);
                     }}
-                    className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#2368f5]"
-                  >
-                    {[5, 10, 15, 20, 50].map(size => (
-                      <option key={size} value={size}>
-                        {size} {t.recruiter.pipeline.perPage}
-                      </option>
-                    ))}
-                  </select>
+                    direction="up"
+                    searchable={false}
+                    triggerClassName="py-1 px-2.5 text-xs font-bold bg-slate-50 border-slate-200 rounded-lg"
+                    options={[5, 10, 15, 20, 50].map(size => ({
+                      value: String(size),
+                      label: `${size} ${t.recruiter.pipeline.perPage}`,
+                    }))}
+                  />
                 </div>
               </div>
 

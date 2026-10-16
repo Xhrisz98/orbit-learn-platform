@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { X, UserPlus, Mars, Venus, Briefcase, Layers, Edit3 } from 'lucide-react';
 import { getLocalizedArea } from '../../utils/areaLocalization';
 import { resolveCandidateGender } from '../../utils/genderHelper';
+import { CustomSelect } from '../common/CustomSelect';
 import type { Candidate } from '../../types';
 
 interface Props {
@@ -191,17 +192,15 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
               <Layers className="w-3.5 h-3.5 text-[#2368f5]" />
               <span>{t.recruiter.createCandidateModal.fieldArea} *</span>
             </label>
-            <select
+            <CustomSelect
               value={selectedArea}
-              onChange={e => handleAreaChange(e.target.value)}
-              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] font-medium"
-            >
-              {areas.map(a => (
-                <option key={a.id} value={a.name}>
-                  {getLocalizedArea(a.name, language)}
-                </option>
-              ))}
-            </select>
+              onChange={val => handleAreaChange(val)}
+              className="w-full"
+              options={areas.map(a => ({
+                value: a.name,
+                label: getLocalizedArea(a.name, language),
+              }))}
+            />
           </div>
 
           {/* Secondary Areas / Additional Departments Selection */}
@@ -211,27 +210,22 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
               <span>{t.recruiter.createCandidateModal.secondaryAreasLabel}</span>
             </label>
 
-            <select
+            <CustomSelect
               value=""
-              onChange={e => {
-                const val = e.target.value;
+              onChange={val => {
                 if (val && !secondaryAreas.includes(val) && val !== selectedArea) {
                   setSecondaryAreas(prev => [...prev, val]);
                 }
               }}
-              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] font-medium"
-            >
-              <option value="" disabled>
-                {t.recruiter.createCandidateModal.selectSecondaryAreaPlaceholder}
-              </option>
-              {areas
+              placeholder={t.recruiter.createCandidateModal.selectSecondaryAreaPlaceholder}
+              className="w-full"
+              options={areas
                 .filter(a => a.name !== selectedArea && !secondaryAreas.includes(a.name))
-                .map(a => (
-                  <option key={a.id} value={a.name}>
-                    {getLocalizedArea(a.name, language)}
-                  </option>
-                ))}
-            </select>
+                .map(a => ({
+                  value: a.name,
+                  label: getLocalizedArea(a.name, language),
+                }))}
+            />
 
             {/* Badges with X */}
             {secondaryAreas.length > 0 ? (
@@ -267,27 +261,28 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
               <span>{t.recruiter.createCandidateModal.fieldRole} *</span>
             </label>
 
-            <select
+            <CustomSelect
               value={isCustomRole ? '__custom__' : selectedClassification}
-              onChange={e => {
-                if (e.target.value === '__custom__') {
+              onChange={val => {
+                if (val === '__custom__') {
                   setIsCustomRole(true);
                 } else {
                   setIsCustomRole(false);
-                  setSelectedClassification(e.target.value);
+                  setSelectedClassification(val);
                 }
               }}
-              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#2368f5] font-medium"
-            >
-              {availableClassifications.map((item, idx) => (
-                <option key={idx} value={item}>
-                  {item}
-                </option>
-              ))}
-              <option value="__custom__">
-                {t.recruiter.createCandidateModal.customRoleOption}
-              </option>
-            </select>
+              className="w-full"
+              options={[
+                ...availableClassifications.map(item => ({
+                  value: item,
+                  label: item,
+                })),
+                {
+                  value: '__custom__',
+                  label: t.recruiter.createCandidateModal.customRoleOption,
+                },
+              ]}
+            />
 
             {isCustomRole && (
               <input
