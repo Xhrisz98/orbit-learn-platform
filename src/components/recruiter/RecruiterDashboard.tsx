@@ -552,6 +552,7 @@ export const RecruiterDashboard: React.FC = () => {
                   }}
                   language={language}
                   placeholder={language === 'es' ? 'Filtrar por fecha' : 'Filter by date'}
+                  align="right"
                 />
 
                 {/* Clear Filters Button */}
@@ -1618,10 +1619,33 @@ export const RecruiterDashboard: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-slate-900 truncate">{test.candidateName}</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const found = candidates.find(c => c.id === test.candidateId) || candidates.find(c => c.name.toLowerCase().trim() === test.candidateName.toLowerCase().trim());
+                                if (found) {
+                                  setSelectedProfileCandidate(found);
+                                } else {
+                                  setSelectedProfileCandidate({
+                                    id: test.candidateId,
+                                    name: test.candidateName,
+                                    email: test.candidateEmail,
+                                    roleApplied: '',
+                                    avatar: gender === 'female' ? 'gender:female' : 'gender:male',
+                                    gender: gender,
+                                    registeredAt: test.assignedAt,
+                                  });
+                                }
+                              }}
+                              className="text-left group/cand cursor-pointer block truncate min-w-0"
+                              title={t.recruiter.pipeline.viewCandidateProfile}
+                            >
+                              <p className="font-bold text-slate-900 group-hover/cand:text-[#2368f5] group-hover/cand:underline flex items-center gap-1 transition-colors truncate">
+                                <span className="truncate">{test.candidateName}</span>
+                                <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover/cand:text-[#2368f5] shrink-0" />
+                              </p>
                               <p className="text-[11px] text-slate-400 truncate">{test.candidateEmail}</p>
-                            </div>
+                            </button>
                           </div>
                         </td>
 
@@ -1706,7 +1730,24 @@ export const RecruiterDashboard: React.FC = () => {
                               <span>{t.recruiter.typing.viewCertificateBtn}</span>
                             </button>
                           ) : (
-                            <span className="text-[11px] text-slate-400 italic">No cert</span>
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  const link = `${window.location.origin}?code=${test.id}`;
+                                  navigator.clipboard.writeText(link);
+                                  alert(
+                                    t.recruiter.pipeline.linkCopiedAlert
+                                      .replace('{name}', test.candidateName)
+                                      .replace('{email}', test.candidateEmail) + `\n\n${link}`
+                                  );
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 transition-colors cursor-pointer text-xs border border-emerald-200"
+                                title={t.recruiter.pipeline.copyLinkBtn}
+                              >
+                                <Copy className="w-3 h-3" />
+                                <span>{t.recruiter.pipeline.copyLinkBtn}</span>
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -1913,10 +1954,33 @@ export const RecruiterDashboard: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-slate-900 truncate">{sub.candidateName}</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const found = candidates.find(c => c.id === sub.candidateId) || candidates.find(c => c.name.toLowerCase().trim() === sub.candidateName.toLowerCase().trim());
+                                if (found) {
+                                  setSelectedProfileCandidate(found);
+                                } else {
+                                  setSelectedProfileCandidate({
+                                    id: sub.candidateId,
+                                    name: sub.candidateName,
+                                    email: sub.candidateEmail,
+                                    roleApplied: '',
+                                    avatar: gender === 'female' ? 'gender:female' : 'gender:male',
+                                    gender: gender,
+                                    registeredAt: sub.submittedAt,
+                                  });
+                                }
+                              }}
+                              className="text-left group/cand cursor-pointer block truncate min-w-0"
+                              title={t.recruiter.pipeline.viewCandidateProfile}
+                            >
+                              <p className="font-bold text-slate-900 group-hover/cand:text-[#2368f5] group-hover/cand:underline flex items-center gap-1 transition-colors truncate">
+                                <span className="truncate">{sub.candidateName}</span>
+                                <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover/cand:text-[#2368f5] shrink-0" />
+                              </p>
                               <p className="text-[11px] text-slate-400 truncate">{sub.candidateEmail}</p>
-                            </div>
+                            </button>
                           </div>
                         </td>
 
@@ -1997,13 +2061,33 @@ export const RecruiterDashboard: React.FC = () => {
                         </td>
 
                         <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => setSelectedExcelSubmission(sub)}
-                            className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 border border-emerald-200"
-                          >
-                            <FileSpreadsheet className="w-3.5 h-3.5" />
-                            <span>{t.recruiter.excel.colActions}</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            {sub.submittedFileName && (
+                              <button
+                                onClick={() => setSelectedExcelSubmission(sub)}
+                                className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 border border-emerald-200"
+                              >
+                                <FileSpreadsheet className="w-3.5 h-3.5" />
+                                <span>{t.recruiter.excel.colActions}</span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                const link = `${window.location.origin}?code=${sub.id}`;
+                                navigator.clipboard.writeText(link);
+                                alert(
+                                  t.recruiter.pipeline.linkCopiedAlert
+                                    .replace('{name}', sub.candidateName)
+                                    .replace('{email}', sub.candidateEmail) + `\n\n${link}`
+                                );
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 transition-colors cursor-pointer text-xs border border-emerald-200"
+                              title={t.recruiter.pipeline.copyLinkBtn}
+                            >
+                              <Copy className="w-3 h-3" />
+                              <span>{t.recruiter.pipeline.copyLinkBtn}</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -80,8 +80,8 @@ export const translations = {
       screenCode: {
         headerTitle: 'Technical Assessment Access',
         headerSubtitle: 'Enter the code you received in your invitation',
-        codeLabel: 'Exam Code or ID',
-        codePlaceholder: 'e.g. f03408d6-2243-4b6b-af53-a131eb59e697',
+        codeLabel: 'Exam Code, Test ID or Registered Email',
+        codePlaceholder: 'e.g. your.email@example.com or test code...',
         searchBtn: 'Find Assessment',
         recruiterLink: 'Are you a recruiter? Go to Administrative Portal',
         codeNotFound: 'No assessment found with that code. Please check the link sent by the recruiter.',
@@ -576,8 +576,8 @@ export const translations = {
       screenCode: {
         headerTitle: 'Acceso a Evaluación Técnica',
         headerSubtitle: 'Ingresa el código que recibiste en tu invitación',
-        codeLabel: 'Código o ID de Examen',
-        codePlaceholder: 'Ej. f03408d6-2243-4b6b-af53-a131eb59e697',
+        codeLabel: 'Código de Examen, ID de Prueba o Correo Registrado',
+        codePlaceholder: 'Ej. tu.correo@ejemplo.com o código de examen...',
         searchBtn: 'Buscar Evaluación',
         recruiterLink: '¿Eres reclutador? Ir al Portal Administrativo',
         codeNotFound: 'No se encontró ninguna evaluación con ese código. Verifica el enlace enviado por el reclutador.',

@@ -32,7 +32,7 @@ export const ModernDateRangePicker: React.FC<Props> = ({
   language = 'en',
   placeholder,
   className = '',
-  align = 'left',
+  align = 'right',
   direction = 'down',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -275,7 +275,7 @@ export const ModernDateRangePicker: React.FC<Props> = ({
         <div
           className={`absolute z-[100] w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 overflow-hidden ${
             direction === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'
-          } ${align === 'right' ? 'right-0' : 'left-0 sm:left-auto'}`}
+          } ${align === 'right' ? 'right-0 left-auto' : 'left-0 right-auto sm:left-auto'}`}
           style={{
             animation: 'fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
