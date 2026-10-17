@@ -203,6 +203,37 @@ export const AssignQuizModal: React.FC<Props> = ({
     }
   }, [isOpen, defaultCandidateId, defaultQuizId, candidates, quizzes, typingTemplates, excelAssessments]);
 
+  // Handle modality change in Nivel 0
+  const handleModalityChange = (newModality: 'quiz' | 'typing' | 'excel') => {
+    setModality(newModality);
+    setSuiteWarning(null);
+    setTrimNotice(null);
+
+    if (newModality === 'typing') {
+      if (!selectedTypingId && typingTemplates.length > 0) {
+        setSelectedTypingId(typingTemplates[0].id);
+      }
+    } else if (newModality === 'excel') {
+      if (!selectedExcelId && excelAssessments.length > 0) {
+        setSelectedExcelId(excelAssessments[0].id);
+      }
+    } else if (newModality === 'quiz') {
+      if (configuredBanks.length === 0 && quizzes.length > 0) {
+        const defaultQ = branchQuizzes[0] || quizzes[0];
+        if (defaultQ) {
+          setConfiguredBanks([
+            {
+              quizId: defaultQ.id,
+              durationPreset: 15,
+              selectedQuestionIds: defaultQ.questions.slice(0, 10).map(q => q.id),
+            },
+          ]);
+          setActiveBankIndex(0);
+        }
+      }
+    }
+  };
+
   // Handle branch cascading change in Step 2
   const handleBranchChange = (branch: string) => {
     setSelectedBranch(branch);
@@ -525,60 +556,111 @@ export const AssignQuizModal: React.FC<Props> = ({
             </div>
 
             <form onSubmit={handleSubmit} className="overflow-y-auto pr-1 py-4 space-y-5 flex-1">
-              {/* Top Demand Filter Bar */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                  <span className="flex items-center gap-1.5">
-                    <Filter className="w-3.5 h-3.5 text-[#2368f5]" />
-                    <span>{t.recruiter.assignModal.filterDemandTitle}</span>
-                  </span>
-                  <span className="text-[11px] text-slate-500 font-semibold">
-                    {t.recruiter.assignModal.candidatesFound.replace(
-                      '{count}',
-                      String(filteredCandidates.length)
-                    )}
+              {/* Nivel 0: Selector Maestro de Modalidad (Assessment Modality Bar) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-[#2368f5]" />
+                    <span>{t.recruiter.assignModal.modalityTitle}</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                    {language === 'es'
+                      ? 'Selecciona la modalidad para configurar sus parámetros'
+                      : 'Select modality to configure custom parameters'}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      {t.recruiter.assignModal.filterDemandAreaLabel}
-                    </label>
-                    <CustomSelect
-                      value={filterArea}
-                      onChange={val => setFilterArea(val)}
-                      className="w-full"
-                      options={[
-                        { value: '', label: t.recruiter.assignModal.allAreasOption },
-                        ...candidateAreas.map(area => ({
-                          value: area,
-                          label: getLocalizedArea(area, language),
-                        })),
-                      ]}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      {t.recruiter.assignModal.filterDemandRoleLabel}
-                    </label>
-                    <CustomSelect
-                      value={filterRole}
-                      onChange={val => setFilterRole(val)}
-                      className="w-full"
-                      options={[
-                        { value: '', label: t.recruiter.assignModal.allRolesOption },
-                        ...candidateRoles.map(role => ({
-                          value: role,
-                          label: role,
-                        })),
-                      ]}
-                    />
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Option 1: Quiz Bank */}
+                  <button
+                    type="button"
+                    onClick={() => handleModalityChange('quiz')}
+                    className={`p-3 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                      modality === 'quiz'
+                        ? 'bg-blue-50/90 border-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        modality === 'quiz'
+                          ? 'bg-[#2368f5] text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs font-bold truncate ${modality === 'quiz' ? 'text-[#10243e]' : 'text-slate-800'}`}>
+                        {t.recruiter.assignModal.modalityQuiz}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                        {quizzes.length} {language === 'es' ? 'bancos de preguntas' : 'question banks'}
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Option 2: Typing Speed Test */}
+                  <button
+                    type="button"
+                    onClick={() => handleModalityChange('typing')}
+                    className={`p-3 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                      modality === 'typing'
+                        ? 'bg-blue-50/90 border-[#2368f5] ring-2 ring-blue-500/20 shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        modality === 'typing'
+                          ? 'bg-[#2368f5] text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      <Keyboard className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs font-bold truncate ${modality === 'typing' ? 'text-[#10243e]' : 'text-slate-800'}`}>
+                        {t.recruiter.assignModal.modalityTyping}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                        {typingTemplates.length} {language === 'es' ? 'plantillas • 1 Min' : 'templates • 1 Min'}
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Option 3: Excel Practical Task */}
+                  <button
+                    type="button"
+                    onClick={() => handleModalityChange('excel')}
+                    className={`p-3 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                      modality === 'excel'
+                        ? 'bg-emerald-50/90 border-emerald-600 ring-2 ring-emerald-500/20 shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        modality === 'excel'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs font-bold truncate ${modality === 'excel' ? 'text-emerald-950' : 'text-slate-800'}`}>
+                        {t.recruiter.assignModal.modalityExcel}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                        {excelAssessments.length} {language === 'es' ? 'tareas prácticas' : 'practical tasks'}
+                      </p>
+                    </div>
+                  </button>
                 </div>
               </div>
 
-              {/* Step 1: Select Candidates */}
-              <div className="space-y-2">
+              {/* Paso 1: Filtro de Demanda y Selección Masiva de Candidatos */}
+              <div className="space-y-3 pt-2 border-t border-slate-200">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-[#2368f5]" />
@@ -606,7 +688,60 @@ export const AssignQuizModal: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-200">
+                {/* Top Demand Filter Bar */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                    <span className="flex items-center gap-1.5">
+                      <Filter className="w-3.5 h-3.5 text-[#2368f5]" />
+                      <span>{t.recruiter.assignModal.filterDemandTitle}</span>
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-semibold">
+                      {t.recruiter.assignModal.candidatesFound.replace(
+                        '{count}',
+                        String(filteredCandidates.length)
+                      )}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        {t.recruiter.assignModal.filterDemandAreaLabel}
+                      </label>
+                      <CustomSelect
+                        value={filterArea}
+                        onChange={val => setFilterArea(val)}
+                        className="w-full"
+                        options={[
+                          { value: '', label: t.recruiter.assignModal.allAreasOption },
+                          ...candidateAreas.map(area => ({
+                            value: area,
+                            label: getLocalizedArea(area, language),
+                          })),
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        {t.recruiter.assignModal.filterDemandRoleLabel}
+                      </label>
+                      <CustomSelect
+                        value={filterRole}
+                        onChange={val => setFilterRole(val)}
+                        className="w-full"
+                        options={[
+                          { value: '', label: t.recruiter.assignModal.allRolesOption },
+                          ...candidateRoles.map(role => ({
+                            value: role,
+                            label: role,
+                          })),
+                        ]}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Candidate Selection Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-200">
                   {filteredCandidates.length === 0 ? (
                     <div className="col-span-full py-4 text-center text-xs text-slate-400 italic">
                       {language === 'es'
@@ -674,189 +809,171 @@ export const AssignQuizModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Assessment Modality Selector */}
-              <div className="space-y-2 pt-2 border-t border-slate-200">
-                <label className="text-xs font-bold text-slate-900 block">
-                  {t.recruiter.assignModal.modalityTitle}
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setModality('quiz')}
-                    className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
-                      modality === 'quiz'
-                        ? 'bg-blue-50/80 border-[#2368f5] text-[#10243e] font-bold shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                        modality === 'quiz' ? 'bg-[#2368f5] text-white' : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      <BookOpen className="w-4 h-4" />
-                    </div>
-                    <div className="truncate">
-                      <p className="text-xs font-bold truncate">{t.recruiter.assignModal.modalityQuiz}</p>
-                      <p className="text-[10px] text-slate-400 truncate">
-                        {quizzes.length} {language === 'es' ? 'bancos' : 'banks'}
-                      </p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setModality('typing')}
-                    className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
-                      modality === 'typing'
-                        ? 'bg-blue-50/80 border-[#2368f5] text-[#10243e] font-bold shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                        modality === 'typing' ? 'bg-[#2368f5] text-white' : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      <Keyboard className="w-4 h-4" />
-                    </div>
-                    <div className="truncate">
-                      <p className="text-xs font-bold truncate">{t.recruiter.assignModal.modalityTyping}</p>
-                      <p className="text-[10px] text-slate-400 truncate">
-                        {typingTemplates.length} {language === 'es' ? 'plantillas' : 'templates'}
-                      </p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setModality('excel')}
-                    className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
-                      modality === 'excel'
-                        ? 'bg-emerald-50/80 border-emerald-600 text-emerald-950 font-bold shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                        modality === 'excel' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      <FileSpreadsheet className="w-4 h-4" />
-                    </div>
-                    <div className="truncate">
-                      <p className="text-xs font-bold truncate">{t.recruiter.assignModal.modalityExcel}</p>
-                      <p className="text-[10px] text-slate-400 truncate">
-                        {excelAssessments.length} {language === 'es' ? 'tareas' : 'tasks'}
-                      </p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
+              {/* Paso 2: Configuración Dinámica según la Modalidad */}
               {/* Typing Configuration Panel */}
               {modality === 'typing' && (
-                <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <div className="space-y-3 pt-2 border-t border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       <Keyboard className="w-4 h-4 text-[#2368f5]" />
-                      <span>{t.recruiter.assignModal.typingTemplateLabel}</span>
+                      <span>{t.recruiter.assignModal.step2Label}</span>
                     </label>
-                    <CustomSelect
-                      value={selectedTypingId}
-                      onChange={val => setSelectedTypingId(val)}
-                      className="w-full"
-                      options={typingTemplates.map(tmp => ({
-                        value: tmp.id,
-                        label: `${tmp.title} (${tmp.language.toUpperCase()} • ${tmp.difficulty})`,
-                      }))}
-                    />
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#2368f5] border border-blue-200">
+                      1 {language === 'es' ? 'Minuto Estándar' : 'Minute Benchmark'}
+                    </span>
                   </div>
 
-                  {selectedTypingTemplate && (
-                    <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800">
-                          {t.recruiter.assignModal.typingPreviewLabel}
-                        </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#2368f5] border border-blue-200">
-                          1 {language === 'es' ? 'Minuto Estándar' : 'Minute Benchmark'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed font-mono">
-                        "{selectedTypingTemplate.text}"
-                      </p>
-                      <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                        <span>
-                          {selectedTypingTemplate.text.split(/\s+/).length}{' '}
-                          {language === 'es' ? 'palabras' : 'words'}
-                        </span>
-                        <span>•</span>
-                        <span>
-                          {selectedTypingTemplate.text.length}{' '}
-                          {language === 'es' ? 'caracteres' : 'chars'}
-                        </span>
-                      </div>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                        <Keyboard className="w-4 h-4 text-[#2368f5]" />
+                        <span>{t.recruiter.assignModal.typingTemplateLabel}</span>
+                      </label>
+                      <CustomSelect
+                        value={selectedTypingId}
+                        onChange={val => setSelectedTypingId(val)}
+                        className="w-full"
+                        options={typingTemplates.map(tmp => ({
+                          value: tmp.id,
+                          label: `${tmp.title} (${tmp.language.toUpperCase()} • ${tmp.difficulty})`,
+                        }))}
+                      />
                     </div>
-                  )}
+
+                    {selectedTypingTemplate && (
+                      <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-800">
+                            {t.recruiter.assignModal.typingPreviewLabel}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#2368f5] border border-blue-200">
+                            1 {language === 'es' ? 'Minuto' : 'Minute'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed font-mono">
+                          "{selectedTypingTemplate.text}"
+                        </p>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                          <span className="font-medium">
+                            {selectedTypingTemplate.text.split(/\s+/).length}{' '}
+                            {language === 'es' ? 'palabras' : 'words'}
+                          </span>
+                          <span>•</span>
+                          <span className="font-medium">
+                            {selectedTypingTemplate.text.length}{' '}
+                            {language === 'es' ? 'caracteres' : 'chars'}
+                          </span>
+                          <span>•</span>
+                          <span className="font-medium text-[#2368f5]">
+                            {selectedTypingTemplate.language.toUpperCase()}
+                          </span>
+                        </div>
+
+                        {/* Benchmark Scoring Reference Pills */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
+                          <div className="p-2 rounded-lg border border-blue-100 bg-blue-50/50 flex items-center gap-2">
+                            <Shield className="w-3.5 h-3.5 text-[#2368f5] shrink-0" />
+                            <div className="min-w-0">
+                              <p className="font-bold text-slate-800 text-[10px]">
+                                {language === 'es' ? 'Nivel Inicial' : 'Novice Level'}
+                              </p>
+                              <p className="text-[10px] text-slate-500">&lt; 30 Net WPM</p>
+                            </div>
+                          </div>
+                          <div className="p-2 rounded-lg border border-amber-100 bg-amber-50/50 flex items-center gap-2">
+                            <Zap className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="font-bold text-slate-800 text-[10px]">
+                                {language === 'es' ? 'Intermedio' : 'Intermediate'}
+                              </p>
+                              <p className="text-[10px] text-slate-500">30 – 55 Net WPM</p>
+                            </div>
+                          </div>
+                          <div className="p-2 rounded-lg border border-emerald-100 bg-emerald-50/50 flex items-center gap-2">
+                            <Award className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="font-bold text-slate-800 text-[10px]">
+                                {language === 'es' ? 'Avanzado' : 'Advanced'}
+                              </p>
+                              <p className="text-[10px] text-slate-500">&gt; 55 Net WPM</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               {/* Excel Practical Configuration Panel */}
               {modality === 'excel' && (
-                <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <div className="space-y-3 pt-2 border-t border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                      <span>{t.recruiter.assignModal.excelTaskLabel}</span>
+                      <span>{t.recruiter.assignModal.step2Label}</span>
                     </label>
-                    <CustomSelect
-                      value={selectedExcelId}
-                      onChange={val => setSelectedExcelId(val)}
-                      className="w-full"
-                      options={excelAssessments.map(a => ({
-                        value: a.id,
-                        label: `${a.title} (${getLocalizedArea(a.departmentArea, language)} • ${a.timeLimitMinutes} min)`,
-                      }))}
-                    />
+                    {selectedExcelAssessment && (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {selectedExcelAssessment.timeLimitMinutes} min
+                      </span>
+                    )}
                   </div>
 
-                  {selectedExcelAssessment && (
-                    <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800">
-                          {t.recruiter.assignModal.excelInstructionsPreview}
-                        </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {selectedExcelAssessment.timeLimitMinutes} min
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600">{selectedExcelAssessment.description}</p>
-                      <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-1">
-                        {(typeof selectedExcelAssessment.instructions === 'string'
-                          ? selectedExcelAssessment.instructions.split('\n')
-                          : Array.isArray(selectedExcelAssessment.instructions)
-                          ? (selectedExcelAssessment.instructions as string[])
-                          : []
-                        )
-                          .map(i => i.trim())
-                          .filter(Boolean)
-                          .map((inst, idx) => (
-                            <p key={idx} className="flex items-start gap-1.5">
-                              <span className="font-bold shrink-0">{idx + 1}.</span>
-                              <span className="leading-relaxed">{inst}</span>
-                            </p>
-                          ))}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 bg-emerald-50 p-2 rounded-lg border border-emerald-100">
-                        <FileSpreadsheet className="w-4 h-4 shrink-0 text-emerald-600" />
-                        <span className="text-slate-500 font-normal">
-                          {t.recruiter.assignModal.excelTemplateFile}:
-                        </span>
-                        <span className="font-mono truncate">{selectedExcelAssessment.templateFileName}</span>
-                      </div>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                        <span>{t.recruiter.assignModal.excelTaskLabel}</span>
+                      </label>
+                      <CustomSelect
+                        value={selectedExcelId}
+                        onChange={val => setSelectedExcelId(val)}
+                        className="w-full"
+                        options={excelAssessments.map(a => ({
+                          value: a.id,
+                          label: `${a.title} (${getLocalizedArea(a.departmentArea, language)} • ${a.timeLimitMinutes} min)`,
+                        }))}
+                      />
                     </div>
-                  )}
+
+                    {selectedExcelAssessment && (
+                      <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-800">
+                            {t.recruiter.assignModal.excelInstructionsPreview}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            {selectedExcelAssessment.timeLimitMinutes} min
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600">{selectedExcelAssessment.description}</p>
+                        <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-1">
+                          {(typeof selectedExcelAssessment.instructions === 'string'
+                            ? selectedExcelAssessment.instructions.split('\n')
+                            : Array.isArray(selectedExcelAssessment.instructions)
+                            ? (selectedExcelAssessment.instructions as string[])
+                            : []
+                          )
+                            .map(i => i.trim())
+                            .filter(Boolean)
+                            .map((inst, idx) => (
+                              <p key={idx} className="flex items-start gap-1.5">
+                                <span className="font-bold shrink-0">{idx + 1}.</span>
+                                <span className="leading-relaxed">{inst}</span>
+                              </p>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                          <FileSpreadsheet className="w-4 h-4 shrink-0 text-emerald-600" />
+                          <span className="text-slate-500 font-normal">
+                            {t.recruiter.assignModal.excelTemplateFile}:
+                          </span>
+                          <span className="font-mono truncate">{selectedExcelAssessment.templateFileName}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1360,12 +1477,19 @@ export const AssignQuizModal: React.FC<Props> = ({
                     {isSubmitting
                       ? t.common.loading
                       : modality === 'typing'
-                      ? t.recruiter.assignModal.typingAssignBtn
+                      ? t.recruiter.assignModal.typingAssignBtn.replace(
+                          '{candidates}',
+                          String(selectedCandidateIds.length)
+                        )
                       : modality === 'excel'
-                      ? t.recruiter.assignModal.excelAssignBtn
+                      ? t.recruiter.assignModal.excelAssignBtn.replace(
+                          '{candidates}',
+                          String(selectedCandidateIds.length)
+                        )
                       : t.recruiter.assignModal.confirmMultiBtn
                           .replace('{banks}', String(configuredBanks.length))
-                          .replace('{questions}', String(totalQuestions))}
+                          .replace('{questions}', String(totalQuestions))
+                          .replace('{candidates}', String(selectedCandidateIds.length))}
                   </span>
                 </button>
               </div>

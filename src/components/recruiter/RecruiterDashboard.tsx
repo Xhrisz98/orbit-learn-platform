@@ -651,7 +651,7 @@ export const RecruiterDashboard: React.FC = () => {
                                 >
                                   <p className="font-bold text-slate-900 group-hover:text-[#2368f5] group-hover:underline flex items-center gap-1 transition-colors">
                                     <span>{item.candidateName}</span>
-                                    <span className="text-[10px] text-slate-400 group-hover:text-[#2368f5]">↗</span>
+                                    <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-[#2368f5]" />
                                   </p>
                                   <p className="text-[11px] text-slate-500 truncate max-w-[190px]">{item.roleApplied}</p>
                                 </button>
