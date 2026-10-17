@@ -1,4 +1,12 @@
-import type { Quiz, Candidate, AssessmentAssignment } from '../types';
+import type {
+  Quiz,
+  Candidate,
+  AssessmentAssignment,
+  TypingTemplate,
+  TypingAssignment,
+  ExcelAssessment,
+  ExcelSubmission,
+} from '../types';
 import { orangeCountyQuizzes } from './orangeCountyData';
 
 export const initialQuizzes: Quiz[] = [
@@ -464,3 +472,153 @@ export const initialAssignments: AssessmentAssignment[] = [
     assignedAt: '2026-10-05 16:30',
   },
 ];
+
+export const initialTypingTemplates: TypingTemplate[] = [
+  {
+    id: 'typing-en-1',
+    title: 'Corporate Communication & Customer Relations',
+    language: 'en',
+    targetDurationSeconds: 60,
+    difficulty: 2,
+    createdAt: '2026-10-10',
+    text: 'Clear communication is essential in modern enterprise operations. When coordinating cross-functional projects, teams must document workflows accurately, manage deadlines proactively, and ensure transparency across stakeholders. Precision and speed in written correspondence reduce operational friction and foster trust among clients and executive leadership.',
+  },
+  {
+    id: 'typing-es-1',
+    title: 'Atención al Cliente y Redacción Profesional',
+    language: 'es',
+    targetDurationSeconds: 60,
+    difficulty: 2,
+    createdAt: '2026-10-10',
+    text: 'La comunicacion asertiva y la gestion eficaz del tiempo constituyen pilares fundamentales en cualquier organizacion moderna. Al documentar procesos administrativos, es indispensable mantener la precision en los datos, verificar los informes antes de su envio y asegurar que las solicitudes de los usuarios reciban una atencion agil y cordial.',
+  },
+  {
+    id: 'typing-tech-1',
+    title: 'Systems Engineering & Cloud Operations',
+    language: 'en',
+    targetDurationSeconds: 60,
+    difficulty: 3,
+    createdAt: '2026-10-12',
+    text: 'Cloud computing platforms require robust automation, continuous monitoring, and structured incident response protocols. System engineers rely on high-throughput diagnostics, secure shell sessions, and strict change control procedures to maintain high availability and data integrity across globally distributed networks.',
+  },
+  {
+    id: 'typing-legal-es',
+    title: 'Documentación Administrativa y Correspondencia',
+    language: 'es',
+    targetDurationSeconds: 60,
+    difficulty: 1,
+    createdAt: '2026-10-14',
+    text: 'La gestion documental y el registro oportuno de expedientes permiten garantizar la continuidad operativa de los servicios publicos y privados. Cada profesional debe clasificar la correspondencia con rigor, respetar la confidencialidad de la informacion y emitir respuestas claras en los plazos reglamentarios establecidos.',
+  },
+];
+
+export const initialTypingAssignments: TypingAssignment[] = [
+  {
+    id: 'type-assign-1',
+    candidateId: 'cand-2',
+    candidateName: 'Mateo Rodriguez',
+    candidateEmail: 'mateo.rodriguez@skillproof-talent.com',
+    templateId: 'typing-en-1',
+    templateTitle: 'Corporate Communication & Customer Relations',
+    status: 'completed',
+    netWpm: 58,
+    grossWpm: 60,
+    accuracy: 97,
+    errorsCount: 2,
+    level: 'advanced',
+    completedAt: '2026-10-15 14:20',
+    assignedAt: '2026-10-15 14:00',
+  },
+  {
+    id: 'type-assign-2',
+    candidateId: 'cand-1',
+    candidateName: 'Sofia Chen',
+    candidateEmail: 'sofia.chen@skillproof-talent.com',
+    templateId: 'typing-tech-1',
+    templateTitle: 'Systems Engineering & Cloud Operations',
+    status: 'completed',
+    netWpm: 46,
+    grossWpm: 48,
+    accuracy: 94,
+    errorsCount: 3,
+    level: 'intermediate',
+    completedAt: '2026-10-14 10:15',
+    assignedAt: '2026-10-14 09:30',
+  },
+  {
+    id: 'type-assign-3',
+    candidateId: 'cand-4',
+    candidateName: 'Lucas Vance',
+    candidateEmail: 'lucas.vance@skillproof-talent.com',
+    templateId: 'typing-es-1',
+    templateTitle: 'Atención al Cliente y Redacción Profesional',
+    status: 'pending',
+    assignedAt: '2026-10-16 11:00',
+  },
+];
+
+export const initialExcelAssessments: ExcelAssessment[] = [
+  {
+    id: 'excel-1',
+    title: 'Financial Budgeting & Advanced VLOOKUP Model',
+    description: 'Build a department quarterly budget model with VLOOKUP, SUMIFS, and variance analysis.',
+    departmentArea: 'Accounting & Finance',
+    timeLimitMinutes: 45,
+    createdAt: '2026-10-08',
+    templateFileName: 'SkillProof_Financial_Model_Template.xlsx',
+    templateFileData: 'Department,Code,Budget,Actual,Manager,Variance\nEngineering,ENG-101,150000,142000,,\nMarketing,MKT-202,85000,92000,,\nHuman Resources,HR-303,45000,43500,,\nFinance & Tax,FIN-404,110000,108500,,\nCustomer Support,SUP-505,65000,71000,,',
+    instructions: '1. Open the budget model worksheet.\n2. In column E, calculate total expenses using SUMIFS based on department codes.\n3. In column F, retrieve department manager names using VLOOKUP or XLOOKUP from the Directory tab.\n4. Calculate Budget Variance % = (Actual - Budget) / Budget.\n5. Highlight variances exceeding 10% in amber.\n6. Save and upload your final workbook.',
+  },
+  {
+    id: 'excel-2',
+    title: 'Inventory Stock Optimization & Pivot Table Audit',
+    description: 'Analyze warehouse inventory turnover, calculate reorder thresholds, and create summary pivot reports.',
+    departmentArea: 'Supply Chain & Operations',
+    timeLimitMinutes: 30,
+    createdAt: '2026-10-09',
+    templateFileName: 'SkillProof_Inventory_Audit_Template.xlsx',
+    templateFileData: 'SKU,Product_Name,Category,Stock_On_Hand,Safety_Stock,Unit_Cost,Reorder_Alert\nSKU-901,Industrial Router 5G,IT Hardware,14,25,320.00,\nSKU-902,Cat6 Ethernet Spool 1000ft,Networking,45,30,85.50,\nSKU-903,Hydraulic Pressure Valve,Trade Parts,8,15,190.00,\nSKU-904,Digital Multimeter Pro,Instruments,22,20,115.00,\nSKU-905,Lockout Tagout Safety Kit,Safety Gear,6,12,75.00,',
+    instructions: '1. Review warehouse inventory records.\n2. In column G Reorder_Alert, write an IF formula flagging REORDER if Stock On Hand is below Safety Stock.\n3. Build a Pivot Table summarizing Total Inventory Value by Warehouse Region.\n4. Sort suppliers by total unit sales descending.\n5. Save and submit your completed file.',
+  },
+  {
+    id: 'excel-3',
+    title: 'Human Resources Compensation & Text Parsing Challenge',
+    description: 'Clean payroll records, split full employee names into First and Last, and format dates consistently.',
+    departmentArea: 'Human Resources & Personnel',
+    timeLimitMinutes: 30,
+    createdAt: '2026-10-11',
+    templateFileName: 'SkillProof_HR_Compensation_Clean.xlsx',
+    templateFileData: 'Employee_ID,Full_Name,First_Name,Last_Name,Department,Hire_Date,Tenure_Years\nEMP-001,Lucas Vance,,,Operations,2021-03-15,\nEMP-002,Sofia Chen,,,IT Systems,2020-08-20,\nEMP-003,Mateo Rodriguez,,,Accounting,2019-11-01,\nEMP-004,Elena Vasquez,,,Human Resources,2022-05-10,',
+    instructions: '1. Clean the employee roster data.\n2. Split Full_Name into First Name and Last Name using text formulas (TEXTBEFORE/TEXTAFTER or LEFT/RIGHT).\n3. Standardize hire dates into YYYY-MM-DD format.\n4. Calculate tenure in full years using DATEDIF or YEARFRAC.\n5. Submit your finished workbook.',
+  },
+];
+
+export const initialExcelSubmissions: ExcelSubmission[] = [
+  {
+    id: 'excel-sub-1',
+    assessmentId: 'excel-1',
+    assessmentTitle: 'Financial Budgeting & Advanced VLOOKUP Model',
+    candidateId: 'cand-2',
+    candidateName: 'Mateo Rodriguez',
+    candidateEmail: 'mateo.rodriguez@skillproof-talent.com',
+    submittedFileName: 'Mateo_Rodriguez_Financial_Model_Resolved.xlsx',
+    submittedFileData: 'Department,Code,Budget,Actual,Manager,Variance\nEngineering,ENG-101,150000,142000,Sarah Jenkins,-5.33%\nMarketing,MKT-202,85000,92000,Carlos Mendes,+8.24%\nHuman Resources,HR-303,45000,43500,Patricia Hill,-3.33%\nFinance & Tax,FIN-404,110000,108500,Mateo Rodriguez,-1.36%\nCustomer Support,SUP-505,65000,71000,Lucas Vance,+9.23%',
+    submittedAt: '2026-10-15 16:40',
+    reviewStatus: 'approved',
+    score: 95,
+    feedback: 'Excellent formula accuracy, correct XLOOKUP mapping and clean variance analysis formatting.',
+  },
+  {
+    id: 'excel-sub-2',
+    assessmentId: 'excel-2',
+    assessmentTitle: 'Inventory Stock Optimization & Pivot Table Audit',
+    candidateId: 'cand-1',
+    candidateName: 'Sofia Chen',
+    candidateEmail: 'sofia.chen@skillproof-talent.com',
+    submittedFileName: 'Sofia_Chen_Inventory_Audit_Resolved.xlsx',
+    submittedFileData: 'SKU,Product_Name,Category,Stock_On_Hand,Safety_Stock,Unit_Cost,Reorder_Alert\nSKU-901,Industrial Router 5G,IT Hardware,14,25,320.00,REORDER\nSKU-902,Cat6 Ethernet Spool 1000ft,Networking,45,30,85.50,OK\nSKU-903,Hydraulic Pressure Valve,Trade Parts,8,15,190.00,REORDER\nSKU-904,Digital Multimeter Pro,Instruments,22,20,115.00,OK\nSKU-905,Lockout Tagout Safety Kit,Safety Gear,6,12,75.00,REORDER',
+    submittedAt: '2026-10-16 10:15',
+    reviewStatus: 'pending',
+  },
+];
+

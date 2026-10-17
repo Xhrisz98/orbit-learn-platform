@@ -1,5 +1,7 @@
 export type Role = 'recruiter' | 'candidate';
 
+export type AssessmentKind = 'quiz' | 'typing' | 'excel';
+
 export interface Question {
   id: string;
   text: string;
@@ -43,6 +45,10 @@ export interface Candidate {
   secondaryAreas?: string[]; // Additional departments / secondary areas
   avatar: string;
   gender?: 'male' | 'female';
+  typingEnabled?: boolean;
+  typingTemplateId?: string;
+  excelEnabled?: boolean;
+  excelAssessmentIds?: string[];
   registeredAt: string;
 }
 
@@ -57,6 +63,7 @@ export interface AssessmentAssignment {
   roleApplied: string;
   quizId: string;
   quizTitle: string;
+  assessmentKind?: AssessmentKind; // 'quiz' (default) | 'typing' | 'excel'
   difficulty?: 1 | 2 | 3;
   durationMinutes?: number;
   selectedQuestionIds?: string[]; // IDs of questions manually picked by recruiter
@@ -69,4 +76,62 @@ export interface AssessmentAssignment {
   assignedAt: string;
   completedAt?: string;
   passedThreshold?: boolean; // e.g. score >= 75
+}
+
+// Typing Assessment Module Types
+export type TypingLevel = 'basic' | 'intermediate' | 'advanced';
+
+export interface TypingTemplate {
+  id: string;
+  title: string;
+  language: 'en' | 'es';
+  text: string;
+  targetDurationSeconds: number; // default: 60
+  difficulty: 1 | 2 | 3;
+  createdAt: string;
+}
+
+export interface TypingAssignment {
+  id: string;
+  candidateId: string;
+  candidateName: string;
+  candidateEmail: string;
+  templateId: string;
+  templateTitle: string;
+  status: 'pending' | 'completed';
+  netWpm?: number;
+  grossWpm?: number;
+  accuracy?: number; // 0 - 100
+  errorsCount?: number;
+  level?: TypingLevel;
+  completedAt?: string;
+  assignedAt: string;
+}
+
+// Excel Practical Assessment Module Types
+export interface ExcelAssessment {
+  id: string;
+  title: string;
+  description: string;
+  instructions: string;
+  templateFileName: string;
+  templateFileData?: string; // CSV/XLSX text or Base64 data for download
+  departmentArea: string;
+  timeLimitMinutes: number;
+  createdAt: string;
+}
+
+export interface ExcelSubmission {
+  id: string;
+  assessmentId: string;
+  assessmentTitle: string;
+  candidateId: string;
+  candidateName: string;
+  candidateEmail: string;
+  submittedFileName: string;
+  submittedFileData?: string;
+  submittedAt: string;
+  reviewStatus: 'pending' | 'approved' | 'rejected';
+  score?: number; // 0 - 100
+  feedback?: string;
 }

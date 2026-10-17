@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import type { AssessmentAssignment, Quiz, Candidate } from '../../types';
+import type { AssessmentAssignment, Quiz, Candidate, TypingAssignment, ExcelSubmission } from '../../types';
 import { QuizBuilderModal } from './QuizBuilderModal';
 import { CandidateModal } from './CandidateModal';
 import { AssignQuizModal } from './AssignQuizModal';
 import { ResultsAuditModal } from './ResultsAuditModal';
 import { CandidateProfileModal } from './CandidateProfileModal';
+import { TypingTemplateModal } from './TypingTemplateModal';
+import { ExcelBuilderModal } from './ExcelBuilderModal';
+import { ExcelReviewModal } from './ExcelReviewModal';
 import { CustomSelect } from '../common/CustomSelect';
 import { ModernDateRangePicker } from '../common/ModernDateRangePicker';
 import {
@@ -32,6 +35,10 @@ import {
   Mars,
   Venus,
   ArrowUpRight,
+  Keyboard,
+  FileSpreadsheet,
+  Check,
+  X,
 } from 'lucide-react';
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
@@ -42,6 +49,9 @@ export const RecruiterDashboard: React.FC = () => {
     candidates,
     quizzes,
     assignments,
+    typingAssignments,
+    excelAssessments,
+    excelSubmissions,
     deleteQuiz,
     deleteCandidate,
     updateAssignmentReviewStatus,
@@ -50,7 +60,7 @@ export const RecruiterDashboard: React.FC = () => {
   } = useApp();
 
   // Active view tab
-  const [activeTab, setActiveTab] = useState<'pipeline' | 'quizzes' | 'candidates'>('pipeline');
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'quizzes' | 'candidates' | 'typing' | 'excel'>('pipeline');
 
   // Modals state
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
@@ -60,6 +70,22 @@ export const RecruiterDashboard: React.FC = () => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAuditAssignment, setSelectedAuditAssignment] = useState<AssessmentAssignment | null>(null);
   const [selectedProfileCandidate, setSelectedProfileCandidate] = useState<Candidate | null>(null);
+  const [isTypingModalOpen, setIsTypingModalOpen] = useState(false);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
+  const [selectedExcelSubmission, setSelectedExcelSubmission] = useState<ExcelSubmission | null>(null);
+  const [selectedTypingCertificate, setSelectedTypingCertificate] = useState<TypingAssignment | null>(null);
+
+  // Typing filters & pagination
+  const [typingSearch, setTypingSearch] = useState('');
+  const [typingLevelFilter, setTypingLevelFilter] = useState<'all' | 'basic' | 'intermediate' | 'advanced'>('all');
+  const [typingPageSize, setTypingPageSize] = useState<number>(10);
+  const [typingCurrentPage, setTypingCurrentPage] = useState<number>(1);
+
+  // Excel filters & pagination
+  const [excelSearch, setExcelSearch] = useState('');
+  const [excelStatusFilter, setExcelStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [excelPageSize, setExcelPageSize] = useState<number>(10);
+  const [excelCurrentPage, setExcelCurrentPage] = useState<number>(1);
 
   // Filters state for pipeline
   const [searchQuery, setSearchQuery] = useState('');
@@ -224,6 +250,64 @@ export const RecruiterDashboard: React.FC = () => {
   // Unique categories for quiz filter dropdown
   const uniqueQuizCategories = Array.from(new Set(quizzes.map(q => q.category))).filter(Boolean);
 
+  // Typing Module Metrics & Pagination
+  const completedTyping = typingAssignments.filter(t => t.status === 'completed');
+  const typingCompletedCount = completedTyping.length;
+  const avgNetWpm =
+    typingCompletedCount > 0
+      ? Math.round(
+          completedTyping.reduce((acc, t) => acc + (t.netWpm || 0), 0) / typingCompletedCount
+        )
+      : 0;
+  const avgAccuracy =
+    typingCompletedCount > 0
+      ? Math.round(
+          completedTyping.reduce((acc, t) => acc + (t.accuracy || 0), 0) / typingCompletedCount
+        )
+      : 0;
+
+  const filteredTyping = typingAssignments.filter(t => {
+    if (typingLevelFilter !== 'all' && t.level !== typingLevelFilter) return false;
+    if (typingSearch.trim()) {
+      const q = typingSearch.toLowerCase().trim();
+      const matchName = t.candidateName.toLowerCase().includes(q);
+      const matchEmail = (t.candidateEmail || '').toLowerCase().includes(q);
+      const matchTemplate = t.templateTitle.toLowerCase().includes(q);
+      if (!matchName && !matchEmail && !matchTemplate) return false;
+    }
+    return true;
+  });
+
+  const totalTypingItems = filteredTyping.length;
+  const totalTypingPages = Math.max(1, Math.ceil(totalTypingItems / typingPageSize));
+  const validTypingPage = Math.min(typingCurrentPage, totalTypingPages);
+  const typingStartIndex = (validTypingPage - 1) * typingPageSize;
+  const paginatedTyping = filteredTyping.slice(typingStartIndex, typingStartIndex + typingPageSize);
+
+  // Excel Module Metrics & Pagination
+  const totalExcelSubmissions = excelSubmissions.length;
+  const pendingExcelCount = excelSubmissions.filter(s => s.reviewStatus === 'pending').length;
+  const approvedExcelCount = excelSubmissions.filter(s => s.reviewStatus === 'approved').length;
+
+  const filteredExcel = excelSubmissions.filter(s => {
+    if (excelStatusFilter !== 'all' && s.reviewStatus !== excelStatusFilter) return false;
+    if (excelSearch.trim()) {
+      const q = excelSearch.toLowerCase().trim();
+      const matchName = s.candidateName.toLowerCase().includes(q);
+      const matchEmail = (s.candidateEmail || '').toLowerCase().includes(q);
+      const matchTitle = (s.assessmentTitle || '').toLowerCase().includes(q);
+      const matchFile = (s.submittedFileName || '').toLowerCase().includes(q);
+      if (!matchName && !matchEmail && !matchTitle && !matchFile) return false;
+    }
+    return true;
+  });
+
+  const totalExcelItems = filteredExcel.length;
+  const totalExcelPages = Math.max(1, Math.ceil(totalExcelItems / excelPageSize));
+  const validExcelPage = Math.min(excelCurrentPage, totalExcelPages);
+  const excelStartIndex = (validExcelPage - 1) * excelPageSize;
+  const paginatedExcel = filteredExcel.slice(excelStartIndex, excelStartIndex + excelPageSize);
+
   return (
     <div className="space-y-6">
       {/* Top Banner & Quick Actions */}
@@ -338,10 +422,10 @@ export const RecruiterDashboard: React.FC = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-1 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('pipeline')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 ${
             activeTab === 'pipeline'
               ? 'bg-[#2368f5] text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -353,7 +437,7 @@ export const RecruiterDashboard: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('quizzes')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 ${
             activeTab === 'quizzes'
               ? 'bg-[#2368f5] text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -365,7 +449,7 @@ export const RecruiterDashboard: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('candidates')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 ${
             activeTab === 'candidates'
               ? 'bg-[#2368f5] text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -373,6 +457,30 @@ export const RecruiterDashboard: React.FC = () => {
         >
           <Users className="w-3.5 h-3.5" />
           <span>{t.recruiter.tabs.candidates} ({candidates.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('typing')}
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 ${
+            activeTab === 'typing'
+              ? 'bg-[#2368f5] text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Keyboard className="w-3.5 h-3.5" />
+          <span>{t.recruiter.tabs.typing} ({typingAssignments.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('excel')}
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 ${
+            activeTab === 'excel'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5" />
+          <span>{t.recruiter.tabs.excel} ({excelSubmissions.length})</span>
         </button>
       </div>
 
@@ -1383,6 +1491,598 @@ export const RecruiterDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Tab 4: Typing Assessments */}
+      {activeTab === 'typing' && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          {/* Typing Metrics Summary Header */}
+          <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                <Keyboard className="w-5 h-5 text-[#2368f5]" />
+                <span>{t.recruiter.typing.title}</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {t.recruiter.typing.subtitle}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+              <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-xs shadow-2xs">
+                <span className="text-slate-500 font-semibold">{t.recruiter.typing.metricsTotal}:</span>
+                <span className="font-bold font-mono text-slate-900">{typingCompletedCount}</span>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-500 font-semibold">{t.recruiter.typing.metricsAvgWpm}:</span>
+                <span className="font-bold font-mono text-[#2368f5]">{avgNetWpm} WPM</span>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-500 font-semibold">{t.recruiter.typing.metricsAvgAccuracy}:</span>
+                <span className="font-bold font-mono text-emerald-600">{avgAccuracy}%</span>
+              </div>
+
+              <button
+                onClick={() => setIsTypingModalOpen(true)}
+                className="px-3.5 py-2 bg-[#2368f5] hover:bg-[#144cc0] text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer ml-auto md:ml-0"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>{t.recruiter.typing.newTemplateBtn}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Typing Filters Toolbar */}
+          <div className="p-4 sm:p-5 border-b border-slate-200 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder={language === 'es' ? 'Buscar por postulante o plantilla...' : 'Search by candidate or template...'}
+                value={typingSearch}
+                onChange={e => {
+                  setTypingSearch(e.target.value);
+                  setTypingCurrentPage(1);
+                }}
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2368f5]/20 focus:border-[#2368f5]"
+              />
+            </div>
+
+            <div className="w-full sm:w-56">
+              <CustomSelect
+                value={typingLevelFilter}
+                onChange={val => {
+                  setTypingLevelFilter(val as any);
+                  setTypingCurrentPage(1);
+                }}
+                className="w-full"
+                options={[
+                  { value: 'all', label: t.recruiter.typing.filterAllLevels },
+                  { value: 'basic', label: t.recruiter.typing.filterBasic },
+                  { value: 'intermediate', label: t.recruiter.typing.filterIntermediate },
+                  { value: 'advanced', label: t.recruiter.typing.filterAdvanced },
+                ]}
+              />
+            </div>
+          </div>
+
+          {/* Typing Table */}
+          {paginatedTyping.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400">
+              <Keyboard className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p>{t.recruiter.typing.empty}</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-600">
+                <thead className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4">{t.recruiter.typing.colCandidate}</th>
+                    <th className="py-3 px-4">{t.recruiter.typing.colTemplate}</th>
+                    <th className="py-3 px-4 text-center">{t.recruiter.typing.colNetWpm}</th>
+                    <th className="py-3 px-4 text-center">{t.recruiter.typing.colGrossWpm}</th>
+                    <th className="py-3 px-4 text-center">{t.recruiter.typing.colAccuracy}</th>
+                    <th className="py-3 px-4 text-center">{t.recruiter.typing.colLevel}</th>
+                    <th className="py-3 px-4 text-center">{t.recruiter.typing.colErrors}</th>
+                    <th className="py-3 px-4">{t.recruiter.typing.colDate}</th>
+                    <th className="py-3 px-4 text-right">{t.recruiter.typing.colActions}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedTyping.map(test => {
+                    const candidateObj = candidates.find(c => c.id === test.candidateId);
+                    const gender = candidateObj ? resolveCandidateGender(candidateObj) : 'male';
+                    const isCompleted = test.status === 'completed';
+
+                    return (
+                      <tr key={test.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative shrink-0">
+                              <div
+                                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs border ${
+                                  gender === 'female'
+                                    ? 'bg-purple-50 border-purple-200 text-purple-700'
+                                    : 'bg-blue-50 border-blue-200 text-blue-700'
+                                }`}
+                              >
+                                {getCandidateInitials(test.candidateName)}
+                              </div>
+                              <div
+                                className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center border shadow-2xs ${
+                                  gender === 'female'
+                                    ? 'bg-purple-100 text-purple-700 border-purple-300'
+                                    : 'bg-blue-100 text-blue-700 border-blue-300'
+                                }`}
+                              >
+                                {gender === 'female' ? (
+                                  <Venus className="w-2.5 h-2.5" />
+                                ) : (
+                                  <Mars className="w-2.5 h-2.5" />
+                                )}
+                              </div>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-slate-900 truncate">{test.candidateName}</p>
+                              <p className="text-[11px] text-slate-400 truncate">{test.candidateEmail}</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4 font-semibold text-slate-800">
+                          {test.templateTitle}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center">
+                          {isCompleted ? (
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-md font-mono font-bold text-xs ${
+                                (test.netWpm ?? 0) >= 55
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : (test.netWpm ?? 0) >= 35
+                                  ? 'bg-blue-50 text-[#2368f5] border border-blue-200'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}
+                            >
+                              {test.netWpm} WPM
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px]">Pending</span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-700">
+                          {isCompleted ? `${test.grossWpm} WPM` : '-'}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">
+                          {isCompleted ? `${test.accuracy}%` : '-'}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center">
+                          {isCompleted ? (
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                test.level === 'advanced'
+                                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                  : test.level === 'intermediate'
+                                  ? 'bg-blue-50 text-[#2368f5] border border-blue-200'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}
+                            >
+                              {test.level === 'advanced' ? (
+                                <Award className="w-3 h-3 text-purple-600" />
+                              ) : test.level === 'intermediate' ? (
+                                <Zap className="w-3 h-3 text-[#2368f5]" />
+                              ) : (
+                                <Shield className="w-3 h-3 text-amber-600" />
+                              )}
+                              <span>
+                                {test.level === 'advanced'
+                                  ? t.recruiter.typing.levelAdvanced
+                                  : test.level === 'intermediate'
+                                  ? t.recruiter.typing.levelIntermediate
+                                  : t.recruiter.typing.levelBasic}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                              Pendiente
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center font-mono font-bold text-rose-600">
+                          {isCompleted ? test.errorsCount : '-'}
+                        </td>
+
+                        <td className="py-3.5 px-4 font-mono text-[11px] text-slate-500">
+                          {test.completedAt || test.assignedAt}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right">
+                          {isCompleted ? (
+                            <button
+                              onClick={() => setSelectedTypingCertificate(test)}
+                              className="px-2.5 py-1 text-xs font-bold text-[#2368f5] bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 border border-blue-200"
+                            >
+                              <Award className="w-3.5 h-3.5" />
+                              <span>{t.recruiter.typing.viewCertificateBtn}</span>
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">No cert</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Typing Pagination Controls */}
+          {totalTypingItems > 5 && (
+            <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/30">
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-500">
+                  {t.recruiter.pipeline.showingPage
+                    .replace('{from}', totalTypingItems === 0 ? '0' : String(typingStartIndex + 1))
+                    .replace('{to}', String(Math.min(typingStartIndex + typingPageSize, totalTypingItems)))
+                    .replace('{total}', String(totalTypingItems))}
+                </span>
+
+                <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
+                  <span className="text-xs text-slate-400">{t.recruiter.pipeline.pageSizeLabel}</span>
+                  <CustomSelect
+                    value={String(typingPageSize)}
+                    onChange={val => {
+                      setTypingPageSize(Number(val));
+                      setTypingCurrentPage(1);
+                    }}
+                    direction="up"
+                    searchable={false}
+                    triggerClassName="py-1 px-2.5 text-xs font-bold bg-slate-50 border-slate-200 rounded-lg"
+                    options={[5, 10, 15, 20, 50].map(size => ({
+                      value: String(size),
+                      label: `${size} ${t.recruiter.pipeline.perPage}`,
+                    }))}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setTypingCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={validTypingPage <= 1}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>{t.recruiter.pipeline.prevPage}</span>
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalTypingPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setTypingCurrentPage(page)}
+                      className={`min-w-7 h-7 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                        validTypingPage === page
+                          ? 'bg-[#2368f5] text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setTypingCurrentPage(p => Math.min(totalTypingPages, p + 1))}
+                  disabled={validTypingPage >= totalTypingPages}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                >
+                  <span>{t.recruiter.pipeline.nextPage}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 5: Excel Practical Assessments */}
+      {activeTab === 'excel' && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          {/* Excel Metrics Header */}
+          <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                <span>{t.recruiter.excel.title}</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {t.recruiter.excel.subtitle}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+              <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-xs shadow-2xs">
+                <span className="text-slate-500 font-semibold">{t.recruiter.excel.metricsTotal}:</span>
+                <span className="font-bold font-mono text-slate-900">{totalExcelSubmissions}</span>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-500 font-semibold">{t.recruiter.excel.metricsPending}:</span>
+                <span className="font-bold font-mono text-amber-600">{pendingExcelCount}</span>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-500 font-semibold">{t.recruiter.excel.metricsApproved}:</span>
+                <span className="font-bold font-mono text-emerald-600">{approvedExcelCount}</span>
+              </div>
+
+              <button
+                onClick={() => setIsExcelModalOpen(true)}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer ml-auto md:ml-0"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>{t.recruiter.excel.newTaskBtn}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Excel Filters Toolbar */}
+          <div className="p-4 sm:p-5 border-b border-slate-200 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder={language === 'es' ? 'Buscar por postulante, tarea o archivo...' : 'Search by candidate, task or file...'}
+                value={excelSearch}
+                onChange={e => {
+                  setExcelSearch(e.target.value);
+                  setExcelCurrentPage(1);
+                }}
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="w-full sm:w-56">
+              <CustomSelect
+                value={excelStatusFilter}
+                onChange={val => {
+                  setExcelStatusFilter(val as any);
+                  setExcelCurrentPage(1);
+                }}
+                className="w-full"
+                options={[
+                  { value: 'all', label: language === 'es' ? 'Todos los Estados' : 'All Statuses' },
+                  { value: 'pending', label: language === 'es' ? 'Pendiente de Revisión' : 'Pending Review' },
+                  { value: 'approved', label: language === 'es' ? 'Aprobados' : 'Approved' },
+                  { value: 'rejected', label: language === 'es' ? 'Rechazados' : 'Needs Revision' },
+                ]}
+              />
+            </div>
+          </div>
+
+          {/* Excel Submissions Table */}
+          {paginatedExcel.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400">
+              <FileSpreadsheet className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p>{t.recruiter.excel.empty}</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-600">
+                <thead className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4">{t.recruiter.excel.colCandidate}</th>
+                    <th className="py-3 px-4">{t.recruiter.excel.colTask}</th>
+                    <th className="py-3 px-4">{t.recruiter.excel.colTemplate}</th>
+                    <th className="py-3 px-4">{t.recruiter.excel.colSubmission}</th>
+                    <th className="py-3 px-4 text-center">{t.recruiter.excel.colReviewStatus}</th>
+                    <th className="py-3 px-4 text-center">{t.recruiter.excel.colScore}</th>
+                    <th className="py-3 px-4">{t.recruiter.excel.colDate}</th>
+                    <th className="py-3 px-4 text-right">{t.recruiter.excel.colActions}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedExcel.map(sub => {
+                    const candidateObj = candidates.find(c => c.id === sub.candidateId);
+                    const gender = candidateObj ? resolveCandidateGender(candidateObj) : 'male';
+                    const assessObj = excelAssessments.find(a => a.id === sub.assessmentId);
+
+                    return (
+                      <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative shrink-0">
+                              <div
+                                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs border ${
+                                  gender === 'female'
+                                    ? 'bg-purple-50 border-purple-200 text-purple-700'
+                                    : 'bg-blue-50 border-blue-200 text-blue-700'
+                                }`}
+                              >
+                                {getCandidateInitials(sub.candidateName)}
+                              </div>
+                              <div
+                                className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center border shadow-2xs ${
+                                  gender === 'female'
+                                    ? 'bg-purple-100 text-purple-700 border-purple-300'
+                                    : 'bg-blue-100 text-blue-700 border-blue-300'
+                                }`}
+                              >
+                                {gender === 'female' ? (
+                                  <Venus className="w-2.5 h-2.5" />
+                                ) : (
+                                  <Mars className="w-2.5 h-2.5" />
+                                )}
+                              </div>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-slate-900 truncate">{sub.candidateName}</p>
+                              <p className="text-[11px] text-slate-400 truncate">{sub.candidateEmail}</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <p className="font-bold text-slate-900">{sub.assessmentTitle || assessObj?.title}</p>
+                          {assessObj?.departmentArea && (
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {getLocalizedArea(assessObj.departmentArea, language)}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          {assessObj ? (
+                            <span className="font-mono text-[11px] text-slate-700 truncate max-w-[140px] block">
+                              {assessObj.templateFileName}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px]">-</span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          {sub.submittedFileName ? (
+                            <span className="font-mono text-[11px] text-emerald-800 font-bold truncate max-w-[150px] block">
+                              {sub.submittedFileName}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px]">
+                              {language === 'es' ? 'No adjuntado aún' : 'Not submitted yet'}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                              sub.reviewStatus === 'approved'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : sub.reviewStatus === 'rejected'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}
+                          >
+                            {sub.reviewStatus === 'approved' ? (
+                              <Check className="w-3 h-3 text-emerald-600" />
+                            ) : sub.reviewStatus === 'rejected' ? (
+                              <X className="w-3 h-3 text-rose-600" />
+                            ) : (
+                              <Clock className="w-3 h-3 text-amber-600" />
+                            )}
+                            <span>
+                              {sub.reviewStatus === 'approved'
+                                ? (language === 'es' ? 'Aprobado' : 'Approved')
+                                : sub.reviewStatus === 'rejected'
+                                ? (language === 'es' ? 'Rechazado' : 'Revision')
+                                : (language === 'es' ? 'Por Revisar' : 'Pending')}
+                            </span>
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center">
+                          {sub.score !== undefined ? (
+                            <span
+                              className={`font-mono font-bold text-xs ${
+                                sub.score >= 75 ? 'text-emerald-700' : 'text-slate-800'
+                              }`}
+                            >
+                              {sub.score}/100
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px]">-</span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 font-mono text-[11px] text-slate-500">
+                          {sub.submittedAt}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => setSelectedExcelSubmission(sub)}
+                            className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 border border-emerald-200"
+                          >
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
+                            <span>{t.recruiter.excel.colActions}</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Excel Pagination Controls */}
+          {totalExcelItems > 5 && (
+            <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/30">
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-500">
+                  {t.recruiter.pipeline.showingPage
+                    .replace('{from}', totalExcelItems === 0 ? '0' : String(excelStartIndex + 1))
+                    .replace('{to}', String(Math.min(excelStartIndex + excelPageSize, totalExcelItems)))
+                    .replace('{total}', String(totalExcelItems))}
+                </span>
+
+                <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
+                  <span className="text-xs text-slate-400">{t.recruiter.pipeline.pageSizeLabel}</span>
+                  <CustomSelect
+                    value={String(excelPageSize)}
+                    onChange={val => {
+                      setExcelPageSize(Number(val));
+                      setExcelCurrentPage(1);
+                    }}
+                    direction="up"
+                    searchable={false}
+                    triggerClassName="py-1 px-2.5 text-xs font-bold bg-slate-50 border-slate-200 rounded-lg"
+                    options={[5, 10, 15, 20, 50].map(size => ({
+                      value: String(size),
+                      label: `${size} ${t.recruiter.pipeline.perPage}`,
+                    }))}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setExcelCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={validExcelPage <= 1}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>{t.recruiter.pipeline.prevPage}</span>
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalExcelPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setExcelCurrentPage(page)}
+                      className={`min-w-7 h-7 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                        validExcelPage === page
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setExcelCurrentPage(p => Math.min(totalExcelPages, p + 1))}
+                  disabled={validExcelPage >= totalExcelPages}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                >
+                  <span>{t.recruiter.pipeline.nextPage}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Modals */}
       <QuizBuilderModal
         isOpen={isQuizModalOpen}
@@ -1415,6 +2115,74 @@ export const RecruiterDashboard: React.FC = () => {
         assignment={selectedAuditAssignment}
         onClose={() => setSelectedAuditAssignment(null)}
       />
+
+      <TypingTemplateModal
+        isOpen={isTypingModalOpen}
+        onClose={() => setIsTypingModalOpen(false)}
+      />
+
+      <ExcelBuilderModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+      />
+
+      <ExcelReviewModal
+        isOpen={Boolean(selectedExcelSubmission)}
+        onClose={() => setSelectedExcelSubmission(null)}
+        submission={selectedExcelSubmission}
+      />
+
+      {/* Typing Certificate Scorecard Modal */}
+      {selectedTypingCertificate && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-slate-200 shadow-2xl space-y-5 text-center my-auto">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#2368f5] to-[#2bc5d9] text-white flex items-center justify-center mx-auto shadow-md">
+              <Award className="w-8 h-8" />
+            </div>
+
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2368f5] border border-blue-200">
+                Official Typing Proficiency Certificate
+              </span>
+              <h3 className="text-xl font-black text-slate-900 mt-2">
+                {selectedTypingCertificate.candidateName}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {selectedTypingCertificate.templateTitle} • {selectedTypingCertificate.completedAt || selectedTypingCertificate.assignedAt}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="text-center">
+                <span className="text-[11px] text-slate-500 font-semibold block">Net Speed</span>
+                <span className="text-2xl font-black font-mono text-[#2368f5]">
+                  {selectedTypingCertificate.netWpm} WPM
+                </span>
+              </div>
+              <div className="text-center">
+                <span className="text-[11px] text-slate-500 font-semibold block">Accuracy</span>
+                <span className="text-2xl font-black font-mono text-emerald-600">
+                  {selectedTypingCertificate.accuracy}%
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-700">Proficiency Tier:</span>
+              <span className="font-bold text-[#2368f5] capitalize">
+                {selectedTypingCertificate.level} Level
+              </span>
+            </div>
+
+            <button
+              onClick={() => setSelectedTypingCertificate(null)}
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+            >
+              {t.common.cancel}
+            </button>
+          </div>
+        </div>
+      )}
 
       <CandidateProfileModal
         candidate={selectedProfileCandidate}

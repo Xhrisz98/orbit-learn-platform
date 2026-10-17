@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { TakeAssessmentModal } from './TakeAssessmentModal';
-import type { AssessmentAssignment } from '../../types';
+import { TypingAssessmentModal } from './TypingAssessmentModal';
+import { ExcelAssessmentModal } from './ExcelAssessmentModal';
+import type { AssessmentAssignment, TypingAssignment, ExcelAssessment } from '../../types';
 import { getLocalizedArea } from '../../utils/areaLocalization';
 import {
   ShieldCheck,
@@ -13,6 +15,8 @@ import {
   Lock,
   Award,
   LogOut,
+  Keyboard,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface Props {
@@ -20,7 +24,17 @@ interface Props {
 }
 
 export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
-  const { assignments, quizzes, setActiveRole, t, language } = useApp();
+  const {
+    assignments,
+    quizzes,
+    typingAssignments,
+    typingTemplates,
+    excelAssessments,
+    excelSubmissions,
+    setActiveRole,
+    t,
+    language,
+  } = useApp();
 
   const [examCode, setExamCode] = useState('');
   const [candidateEmail, setCandidateEmail] = useState('');
@@ -28,6 +42,12 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+
+  // Typing and Excel modal state
+  const [isTypingModalOpen, setIsTypingModalOpen] = useState(false);
+  const [selectedTypingAssignment, setSelectedTypingAssignment] = useState<TypingAssignment | null>(null);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
+  const [selectedExcelAssessment, setSelectedExcelAssessment] = useState<ExcelAssessment | null>(null);
 
   // Check URL query param (?code=... or ?test=...)
   useEffect(() => {
@@ -49,12 +69,43 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
     const code = examCode.trim().toLowerCase();
     const matched = assignments.find(a => a.id.toLowerCase() === code);
 
-    if (!matched) {
-      setErrorMessage(t.candidateAccess.screenCode.codeNotFound);
+    if (matched) {
+      setActiveAssignment(matched);
       return;
     }
 
-    setActiveAssignment(matched);
+    // Check if code matches a candidate email
+    const emailMatch = assignments.find(a => a.candidateEmail.toLowerCase() === code);
+    if (emailMatch) {
+      setActiveAssignment(emailMatch);
+      return;
+    }
+
+    // Check by typing assignment ID
+    const typeMatch = typingAssignments.find(t => t.id.toLowerCase() === code);
+    if (typeMatch) {
+      const candAssign = assignments.find(
+        a => a.candidateEmail.toLowerCase() === typeMatch.candidateEmail.toLowerCase()
+      );
+      if (candAssign) {
+        setActiveAssignment(candAssign);
+        return;
+      }
+    }
+
+    // Check by excel submission ID
+    const excelMatch = excelSubmissions.find(s => s.id.toLowerCase() === code);
+    if (excelMatch) {
+      const candAssign = assignments.find(
+        a => a.candidateEmail.toLowerCase() === excelMatch.candidateEmail.toLowerCase()
+      );
+      if (candAssign) {
+        setActiveAssignment(candAssign);
+        return;
+      }
+    }
+
+    setErrorMessage(t.candidateAccess.screenCode.codeNotFound);
   };
 
   const handleVerifyEmail = (e: React.FormEvent) => {
@@ -93,6 +144,14 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
   const currentAssignment = matchedAssignment || activeAssignment;
   const isCompleted = currentAssignment?.status === 'completed';
   const currentQuiz = currentAssignment ? quizzes.find(q => q.id === currentAssignment.quizId) : null;
+
+  const candidateEmailLower = (currentAssignment?.candidateEmail || '').trim().toLowerCase();
+  const candidateTypingTests = candidateEmailLower
+    ? typingAssignments.filter(t => (t.candidateEmail || '').trim().toLowerCase() === candidateEmailLower)
+    : [];
+  const candidateExcelTasks = candidateEmailLower
+    ? excelSubmissions.filter(s => (s.candidateEmail || '').trim().toLowerCase() === candidateEmailLower)
+    : [];
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
@@ -292,6 +351,106 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
             <span>{t.candidateAccess.screenLobby.startBtn}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
+
+          {/* Practical Assessment Modules Suite (Typing & Excel) */}
+          {candidateTypingTests.length > 0 && (
+            <div className="pt-4 border-t border-slate-100 space-y-2.5">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Keyboard className="w-4 h-4 text-[#2368f5]" />
+                <span>
+                  {language === 'es'
+                    ? 'Prueba de Mecanografía Asignada (1 Minuto)'
+                    : 'Assigned Typing Speed Test (1 Minute)'}
+                </span>
+              </span>
+
+              {candidateTypingTests.map(test => (
+                <div
+                  key={test.id}
+                  className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                >
+                  <div>
+                    <p className="font-bold text-slate-900">{test.templateTitle}</p>
+                    <p className="text-[11px] text-slate-500">
+                      {test.status === 'completed'
+                        ? `${language === 'es' ? 'Completado:' : 'Completed:'} ${test.netWpm} WPM • ${test.accuracy}% accuracy`
+                        : (language === 'es' ? 'Estado: Pendiente por realizar' : 'Status: Pending')}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTypingAssignment(test);
+                      setIsTypingModalOpen(true);
+                    }}
+                    className={`px-4 py-2 rounded-xl font-bold transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5 ${
+                      test.status === 'completed'
+                        ? 'bg-blue-50 text-[#2368f5] hover:bg-blue-100 border border-blue-200'
+                        : 'bg-[#2368f5] hover:bg-[#144cc0] text-white shadow-xs'
+                    }`}
+                  >
+                    <Keyboard className="w-3.5 h-3.5" />
+                    <span>
+                      {test.status === 'completed'
+                        ? (language === 'es' ? 'Repetir Prueba' : 'Retake Test')
+                        : (language === 'es' ? 'Iniciar Mecanografía' : 'Start Typing Test')}
+                    </span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {candidateExcelTasks.length > 0 && (
+            <div className="pt-4 border-t border-slate-100 space-y-2.5">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <span>
+                  {language === 'es'
+                    ? 'Tareas Prácticas de Excel Asignadas'
+                    : 'Assigned Practical Excel Tasks'}
+                </span>
+              </span>
+
+              {candidateExcelTasks.map(task => {
+                const assess = excelAssessments.find(a => a.id === task.assessmentId);
+                return (
+                  <div
+                    key={task.id}
+                    className="p-3.5 rounded-2xl bg-emerald-50/40 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                  >
+                    <div>
+                      <p className="font-bold text-slate-900">{task.assessmentTitle || assess?.title}</p>
+                      <p className="text-[11px] text-slate-500">
+                        {task.submittedFileName
+                          ? `${language === 'es' ? 'Entregado:' : 'Submitted:'} ${task.submittedFileName}`
+                          : (language === 'es' ? 'Estado: Pendiente por subir solución' : 'Status: Solution not uploaded yet')}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (assess) {
+                          setSelectedExcelAssessment(assess);
+                          setIsExcelModalOpen(true);
+                        }
+                      }}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors shadow-xs cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      <span>
+                        {task.submittedFileName
+                          ? (language === 'es' ? 'Reenviar / Ver Solución' : 'Resubmit / View')
+                          : (language === 'es' ? 'Abrir Tarea de Excel' : 'Open Excel Task')}
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -392,11 +551,42 @@ export const CandidateExamAccess: React.FC<Props> = ({ onSwitchToAdmin }) => {
       )}
 
       {/* Assessment Taking Modal */}
-      {isTestModalOpen && (
+      {isTestModalOpen && currentAssignment && (
         <TakeAssessmentModal
           assignment={currentAssignment}
           onClose={() => {
             setIsTestModalOpen(false);
+          }}
+        />
+      )}
+
+      {/* Typing Assessment Modal */}
+      {isTypingModalOpen && selectedTypingAssignment && (
+        <TypingAssessmentModal
+          isOpen={isTypingModalOpen}
+          assignment={selectedTypingAssignment}
+          template={
+            typingTemplates.find(t => t.id === selectedTypingAssignment.templateId) ||
+            typingTemplates[0]
+          }
+          onClose={() => {
+            setIsTypingModalOpen(false);
+            setSelectedTypingAssignment(null);
+          }}
+        />
+      )}
+
+      {/* Excel Assessment Modal */}
+      {isExcelModalOpen && selectedExcelAssessment && currentAssignment && (
+        <ExcelAssessmentModal
+          isOpen={isExcelModalOpen}
+          assessment={selectedExcelAssessment}
+          candidateId={currentAssignment.candidateId}
+          candidateName={currentAssignment.candidateName}
+          candidateEmail={currentAssignment.candidateEmail}
+          onClose={() => {
+            setIsExcelModalOpen(false);
+            setSelectedExcelAssessment(null);
           }}
         />
       )}

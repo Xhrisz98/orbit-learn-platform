@@ -1,6 +1,25 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Role, Quiz, Candidate, AssessmentAssignment, QuizArea } from '../types';
-import { initialQuizzes, initialCandidates, initialAssignments } from '../data/mockData';
+import type {
+  Role,
+  Quiz,
+  Candidate,
+  AssessmentAssignment,
+  QuizArea,
+  TypingTemplate,
+  TypingAssignment,
+  ExcelAssessment,
+  ExcelSubmission,
+  TypingLevel,
+} from '../types';
+import {
+  initialQuizzes,
+  initialCandidates,
+  initialAssignments,
+  initialTypingTemplates,
+  initialTypingAssignments,
+  initialExcelAssessments,
+  initialExcelSubmissions,
+} from '../data/mockData';
 import { translations } from '../i18n/translations';
 import type { Language } from '../i18n/translations';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -29,13 +48,17 @@ interface AppContextType {
   candidates: Candidate[];
   assignments: AssessmentAssignment[];
   areas: QuizArea[];
+  typingTemplates: TypingTemplate[];
+  typingAssignments: TypingAssignment[];
+  excelAssessments: ExcelAssessment[];
+  excelSubmissions: ExcelSubmission[];
   isLiveDatabase: boolean;
   loading: boolean;
   createArea: (name: string, description?: string) => Promise<QuizArea>;
   createQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => Promise<void>;
   updateQuiz: (quizId: string, updatedData: Partial<Quiz>) => Promise<void>;
-  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string; secondaryAreas?: string[] }) => Promise<void>;
-  updateCandidate: (candidateId: string, updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string; secondaryAreas?: string[] }) => Promise<void>;
+  createCandidate: (candidate: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string; secondaryAreas?: string[]; typingEnabled?: boolean; typingTemplateId?: string; excelEnabled?: boolean; excelAssessmentIds?: string[] }) => Promise<void>;
+  updateCandidate: (candidateId: string, updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string; secondaryAreas?: string[]; typingEnabled?: boolean; typingTemplateId?: string; excelEnabled?: boolean; excelAssessmentIds?: string[] }) => Promise<void>;
   assignQuiz: (candidateId: string, quizId: string, selectedQuestionIds?: string[]) => void;
   assignCustomQuiz: (candidateIds: string[], quizId: string, selectedQuestionIds: string[], durationMinutes?: number) => Promise<void>;
   assignCustomSuite: (candidateIds: string[], suite: { quizId: string; selectedQuestionIds: string[]; durationMinutes?: number }[]) => Promise<void>;
@@ -43,6 +66,13 @@ interface AppContextType {
   updateAssignmentReviewStatus: (assignmentId: string, reviewStatus: 'stand_by' | 'approved' | 'rejected') => Promise<void>;
   deleteQuiz: (quizId: string) => Promise<void>;
   deleteCandidate: (candidateId: string) => Promise<void>;
+  createTypingTemplate: (template: Omit<TypingTemplate, 'id' | 'createdAt'>) => Promise<void>;
+  assignTypingTest: (candidateIds: string[], templateId: string) => Promise<void>;
+  submitTypingTest: (assignmentId: string, result: { netWpm: number; grossWpm: number; accuracy: number; errorsCount: number; level: TypingLevel }) => Promise<void>;
+  createExcelAssessment: (assessment: Omit<ExcelAssessment, 'id' | 'createdAt'>) => Promise<void>;
+  assignExcelAssessment: (candidateIds: string[], assessmentId: string) => Promise<void>;
+  submitExcelAssessment: (submission: Omit<ExcelSubmission, 'id' | 'submittedAt' | 'reviewStatus'>) => Promise<void>;
+  updateExcelReviewStatus: (submissionId: string, reviewStatus: 'pending' | 'approved' | 'rejected', score?: number, feedback?: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -74,6 +104,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [areas, setAreas] = useState<QuizArea[]>(initialDefaultAreas);
+
+  const [typingTemplates, setTypingTemplates] = useState<TypingTemplate[]>(() => {
+    const saved = localStorage.getItem('skillproof_typing_templates');
+    return saved ? JSON.parse(saved) : initialTypingTemplates;
+  });
+
+  const [typingAssignments, setTypingAssignments] = useState<TypingAssignment[]>(() => {
+    const saved = localStorage.getItem('skillproof_typing_assignments');
+    return saved ? JSON.parse(saved) : initialTypingAssignments;
+  });
+
+  const [excelAssessments, setExcelAssessments] = useState<ExcelAssessment[]>(() => {
+    const saved = localStorage.getItem('skillproof_excel_assessments');
+    return saved ? JSON.parse(saved) : initialExcelAssessments;
+  });
+
+  const [excelSubmissions, setExcelSubmissions] = useState<ExcelSubmission[]>(() => {
+    const saved = localStorage.getItem('skillproof_excel_submissions');
+    return saved ? JSON.parse(saved) : initialExcelSubmissions;
+  });
+
+  // Sync typing and excel states to localStorage
+  useEffect(() => {
+    localStorage.setItem('skillproof_typing_templates', JSON.stringify(typingTemplates));
+  }, [typingTemplates]);
+
+  useEffect(() => {
+    localStorage.setItem('skillproof_typing_assignments', JSON.stringify(typingAssignments));
+  }, [typingAssignments]);
+
+  useEffect(() => {
+    localStorage.setItem('skillproof_excel_assessments', JSON.stringify(excelAssessments));
+  }, [excelAssessments]);
+
+  useEffect(() => {
+    localStorage.setItem('skillproof_excel_submissions', JSON.stringify(excelSubmissions));
+  }, [excelSubmissions]);
 
   const t = translations[language];
 
@@ -241,50 +308,103 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAssignments(prev => prev.filter(a => a.quizId !== quizId));
   };
 
-  const createCandidate = async (newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & { gender?: 'male' | 'female'; area?: string; secondaryAreas?: string[] }) => {
-    if (isSupabaseConfigured) {
-      try {
-        const created = await candidateService.create(newCandData);
-        setCandidates(prev => [created, ...prev]);
-        return;
-      } catch (err) {
-        console.error('Error creating candidate on Supabase:', err);
-      }
+  const createCandidate = async (
+    newCandData: Omit<Candidate, 'id' | 'registeredAt' | 'avatar'> & {
+      gender?: 'male' | 'female';
+      area?: string;
+      secondaryAreas?: string[];
+      typingEnabled?: boolean;
+      typingTemplateId?: string;
+      excelEnabled?: boolean;
+      excelAssessmentIds?: string[];
     }
+  ) => {
     const secPart = newCandData.secondaryAreas && newCandData.secondaryAreas.length > 0 ? `|sec:${newCandData.secondaryAreas.join(';')}` : '';
+    const newId = `cand-${Date.now()}`;
     const created: Candidate = {
       ...newCandData,
-      id: `cand-${Date.now()}`,
+      id: newId,
       avatar: `gender:${newCandData.gender || 'male'}${newCandData.area ? `|area:${newCandData.area}` : ''}${secPart}`,
       gender: newCandData.gender || 'male',
       area: newCandData.area,
       secondaryAreas: newCandData.secondaryAreas || [],
+      typingEnabled: newCandData.typingEnabled,
+      typingTemplateId: newCandData.typingTemplateId,
+      excelEnabled: newCandData.excelEnabled,
+      excelAssessmentIds: newCandData.excelAssessmentIds,
       registeredAt: new Date().toISOString().split('T')[0],
     };
-    setCandidates(prev => [created, ...prev]);
+
+    if (isSupabaseConfigured) {
+      try {
+        const remoteCreated = await candidateService.create(newCandData);
+        setCandidates(prev => [remoteCreated, ...prev]);
+      } catch (err) {
+        console.error('Error creating candidate on Supabase:', err);
+        setCandidates(prev => [created, ...prev]);
+      }
+    } else {
+      setCandidates(prev => [created, ...prev]);
+    }
+
+    // Auto-assign typing test if enabled
+    if (newCandData.typingEnabled) {
+      const template = typingTemplates.find(t => t.id === newCandData.typingTemplateId) || typingTemplates[0];
+      if (template) {
+        const typingAssign: TypingAssignment = {
+          id: `type-assign-${Date.now()}`,
+          candidateId: newId,
+          candidateName: newCandData.name,
+          candidateEmail: newCandData.email,
+          templateId: template.id,
+          templateTitle: template.title,
+          status: 'pending',
+          assignedAt: new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
+        };
+        setTypingAssignments(prev => [typingAssign, ...prev]);
+      }
+    }
+
+    // Auto-assign excel tasks if enabled
+    if (newCandData.excelEnabled && newCandData.excelAssessmentIds && newCandData.excelAssessmentIds.length > 0) {
+      const newSubs: ExcelSubmission[] = newCandData.excelAssessmentIds.map(aId => {
+        const assess = excelAssessments.find(a => a.id === aId);
+        return {
+          id: `excel-sub-${Date.now()}-${aId}`,
+          assessmentId: aId,
+          assessmentTitle: assess?.title || 'Practical Excel Assessment',
+          candidateId: newId,
+          candidateName: newCandData.name,
+          candidateEmail: newCandData.email,
+          submittedFileName: '',
+          submittedFileData: '',
+          submittedAt: new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
+          reviewStatus: 'pending',
+        };
+      });
+      setExcelSubmissions(prev => [...newSubs, ...prev]);
+    }
   };
 
   const updateCandidate = async (
     candidateId: string,
-    updatedData: { name: string; email: string; roleApplied: string; gender: 'male' | 'female'; area?: string; secondaryAreas?: string[] }
+    updatedData: {
+      name: string;
+      email: string;
+      roleApplied: string;
+      gender: 'male' | 'female';
+      area?: string;
+      secondaryAreas?: string[];
+      typingEnabled?: boolean;
+      typingTemplateId?: string;
+      excelEnabled?: boolean;
+      excelAssessmentIds?: string[];
+    }
   ) => {
     if (isSupabaseConfigured) {
       try {
         const updated = await candidateService.update(candidateId, updatedData);
         setCandidates(prev => prev.map(c => (c.id === candidateId ? updated : c)));
-        setAssignments(prev =>
-          prev.map(a =>
-            a.candidateId === candidateId
-              ? {
-                  ...a,
-                  candidateName: updated.name,
-                  candidateEmail: updated.email,
-                  roleApplied: updated.roleApplied,
-                }
-              : a
-          )
-        );
-        return;
       } catch (err) {
         console.error('Error updating candidate on Supabase:', err);
       }
@@ -302,10 +422,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           area: updatedData.area,
           secondaryAreas: updatedData.secondaryAreas || [],
           gender: updatedData.gender,
+          typingEnabled: updatedData.typingEnabled,
+          typingTemplateId: updatedData.typingTemplateId,
+          excelEnabled: updatedData.excelEnabled,
+          excelAssessmentIds: updatedData.excelAssessmentIds,
           avatar: `gender:${updatedData.gender}${updatedData.area ? `|area:${updatedData.area}` : ''}${secPart}`,
         };
       })
     );
+
+    // Auto-assign typing if newly enabled
+    if (updatedData.typingEnabled) {
+      const alreadyHasTyping = typingAssignments.some(t => t.candidateId === candidateId);
+      if (!alreadyHasTyping) {
+        const template = typingTemplates.find(t => t.id === updatedData.typingTemplateId) || typingTemplates[0];
+        if (template) {
+          const typingAssign: TypingAssignment = {
+            id: `type-assign-${Date.now()}`,
+            candidateId,
+            candidateName: updatedData.name,
+            candidateEmail: updatedData.email,
+            templateId: template.id,
+            templateTitle: template.title,
+            status: 'pending',
+            assignedAt: new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
+          };
+          setTypingAssignments(prev => [typingAssign, ...prev]);
+        }
+      }
+    }
+
+    // Auto-assign Excel tasks if enabled
+    if (updatedData.excelEnabled && updatedData.excelAssessmentIds && updatedData.excelAssessmentIds.length > 0) {
+      const tasksToAdd = updatedData.excelAssessmentIds.filter(
+        aId => !excelSubmissions.some(s => s.candidateId === candidateId && s.assessmentId === aId)
+      );
+      if (tasksToAdd.length > 0) {
+        const newSubs: ExcelSubmission[] = tasksToAdd.map(aId => {
+          const assess = excelAssessments.find(a => a.id === aId);
+          return {
+            id: `excel-sub-${Date.now()}-${aId}`,
+            assessmentId: aId,
+            assessmentTitle: assess?.title || 'Practical Excel Assessment',
+            candidateId,
+            candidateName: updatedData.name,
+            candidateEmail: updatedData.email,
+            submittedFileName: '',
+            submittedFileData: '',
+            submittedAt: new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
+            reviewStatus: 'pending',
+          };
+        });
+        setExcelSubmissions(prev => [...newSubs, ...prev]);
+      }
+    }
 
     setAssignments(prev =>
       prev.map(a =>
@@ -568,6 +738,145 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return created;
   };
 
+  // Typing Assessment Module Methods
+  const createTypingTemplate = async (template: Omit<TypingTemplate, 'id' | 'createdAt'>) => {
+    const newTemplate: TypingTemplate = {
+      ...template,
+      id: `typing-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setTypingTemplates(prev => [newTemplate, ...prev]);
+  };
+
+  const assignTypingTest = async (candidateIds: string[], templateId: string) => {
+    const template = typingTemplates.find(t => t.id === templateId) || typingTemplates[0];
+    const nowStr = new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+    const newAssignments: TypingAssignment[] = candidateIds.map((cId, idx) => {
+      const candidate = candidates.find(c => c.id === cId);
+      return {
+        id: `type-assign-${Date.now()}-${idx}`,
+        candidateId: cId,
+        candidateName: candidate?.name || 'Candidate',
+        candidateEmail: candidate?.email || 'email@candidate.com',
+        templateId: template?.id || 'typing-default',
+        templateTitle: template?.title || 'General Typing Test',
+        status: 'pending',
+        assignedAt: nowStr,
+      };
+    });
+
+    setTypingAssignments(prev => [...newAssignments, ...prev]);
+  };
+
+  const submitTypingTest = async (
+    assignmentId: string,
+    result: { netWpm: number; grossWpm: number; accuracy: number; errorsCount: number; level: TypingLevel }
+  ) => {
+    const nowStr = new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    setTypingAssignments(prev =>
+      prev.map(a =>
+        a.id === assignmentId
+          ? {
+              ...a,
+              status: 'completed',
+              netWpm: result.netWpm,
+              grossWpm: result.grossWpm,
+              accuracy: result.accuracy,
+              errorsCount: result.errorsCount,
+              level: result.level,
+              completedAt: nowStr,
+            }
+          : a
+      )
+    );
+  };
+
+  // Excel Practical Assessment Module Methods
+  const createExcelAssessment = async (assessment: Omit<ExcelAssessment, 'id' | 'createdAt'>) => {
+    const newAssessment: ExcelAssessment = {
+      ...assessment,
+      id: `excel-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setExcelAssessments(prev => [newAssessment, ...prev]);
+  };
+
+  const assignExcelAssessment = async (candidateIds: string[], assessmentId: string) => {
+    const assessment = excelAssessments.find(a => a.id === assessmentId);
+    if (!assessment) return;
+    const nowStr = new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+    const newSubmissions: ExcelSubmission[] = candidateIds.map((cId, idx) => {
+      const candidate = candidates.find(c => c.id === cId);
+      return {
+        id: `excel-sub-${Date.now()}-${idx}-${cId}`,
+        assessmentId: assessment.id,
+        assessmentTitle: assessment.title,
+        candidateId: cId,
+        candidateName: candidate?.name || 'Candidate',
+        candidateEmail: candidate?.email || 'email@candidate.com',
+        submittedFileName: '',
+        submittedFileData: '',
+        submittedAt: nowStr,
+        reviewStatus: 'pending',
+      };
+    });
+
+    setExcelSubmissions(prev => [...newSubmissions, ...prev]);
+  };
+
+  const submitExcelAssessment = async (submission: Omit<ExcelSubmission, 'id' | 'submittedAt' | 'reviewStatus'>) => {
+    const nowStr = new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const existingIndex = excelSubmissions.findIndex(
+      s => s.assessmentId === submission.assessmentId && s.candidateId === submission.candidateId
+    );
+
+    if (existingIndex >= 0) {
+      setExcelSubmissions(prev =>
+        prev.map((s, idx) =>
+          idx === existingIndex
+            ? {
+                ...s,
+                submittedFileName: submission.submittedFileName,
+                submittedFileData: submission.submittedFileData,
+                submittedAt: nowStr,
+                reviewStatus: 'pending',
+              }
+            : s
+        )
+      );
+    } else {
+      const newSub: ExcelSubmission = {
+        id: `excel-sub-${Date.now()}`,
+        ...submission,
+        submittedAt: nowStr,
+        reviewStatus: 'pending',
+      };
+      setExcelSubmissions(prev => [newSub, ...prev]);
+    }
+  };
+
+  const updateExcelReviewStatus = async (
+    submissionId: string,
+    reviewStatus: 'pending' | 'approved' | 'rejected',
+    score?: number,
+    feedback?: string
+  ) => {
+    setExcelSubmissions(prev =>
+      prev.map(s =>
+        s.id === submissionId
+          ? {
+              ...s,
+              reviewStatus,
+              score: score !== undefined ? score : s.score,
+              feedback: feedback !== undefined ? feedback : s.feedback,
+            }
+          : s
+      )
+    );
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -582,6 +891,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         candidates,
         assignments,
         areas,
+        typingTemplates,
+        typingAssignments,
+        excelAssessments,
+        excelSubmissions,
         isLiveDatabase,
         loading,
         createArea,
@@ -596,6 +909,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateAssignmentReviewStatus,
         deleteQuiz,
         deleteCandidate,
+        createTypingTemplate,
+        assignTypingTest,
+        submitTypingTest,
+        createExcelAssessment,
+        assignExcelAssessment,
+        submitExcelAssessment,
+        updateExcelReviewStatus,
       }}
     >
       {children}

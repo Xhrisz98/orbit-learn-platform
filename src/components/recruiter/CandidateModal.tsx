@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { X, UserPlus, Mars, Venus, Briefcase, Layers, Edit3 } from 'lucide-react';
+import {
+  X,
+  UserPlus,
+  Mars,
+  Venus,
+  Briefcase,
+  Layers,
+  Edit3,
+  Keyboard,
+  FileSpreadsheet,
+  Check,
+} from 'lucide-react';
 import { getLocalizedArea } from '../../utils/areaLocalization';
 import { resolveCandidateGender } from '../../utils/genderHelper';
 import { CustomSelect } from '../common/CustomSelect';
@@ -13,7 +24,15 @@ interface Props {
 }
 
 export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEdit }) => {
-  const { createCandidate, updateCandidate, areas, t, language } = useApp();
+  const {
+    createCandidate,
+    updateCandidate,
+    areas,
+    typingTemplates,
+    excelAssessments,
+    t,
+    language,
+  } = useApp();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,6 +42,12 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
   const [isCustomRole, setIsCustomRole] = useState(false);
   const [customRoleText, setCustomRoleText] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
+
+  // Typing and Excel toggles
+  const [typingEnabled, setTypingEnabled] = useState(false);
+  const [typingTemplateId, setTypingTemplateId] = useState('');
+  const [excelEnabled, setExcelEnabled] = useState(false);
+  const [excelAssessmentIds, setExcelAssessmentIds] = useState<string[]>([]);
 
   // Initialize or prefill fields when modal opens or candidateToEdit changes
   useEffect(() => {
@@ -48,6 +73,13 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
           setIsCustomRole(true);
           setCustomRoleText(candidateToEdit.roleApplied || '');
         }
+
+        setTypingEnabled(Boolean(candidateToEdit.typingEnabled));
+        setTypingTemplateId(
+          candidateToEdit.typingTemplateId || (typingTemplates[0]?.id || '')
+        );
+        setExcelEnabled(Boolean(candidateToEdit.excelEnabled));
+        setExcelAssessmentIds(candidateToEdit.excelAssessmentIds || []);
       } else {
         setName('');
         setEmail('');
@@ -55,6 +87,10 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
         setCustomRoleText('');
         setIsCustomRole(false);
         setSecondaryAreas([]);
+        setTypingEnabled(false);
+        setTypingTemplateId(typingTemplates[0]?.id || '');
+        setExcelEnabled(false);
+        setExcelAssessmentIds([]);
 
         if (areas.length > 0) {
           const initialArea = areas[0].name;
@@ -107,6 +143,10 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
         secondaryAreas,
         roleApplied: finalRole || 'General Applicant',
         gender,
+        typingEnabled,
+        typingTemplateId: typingEnabled ? typingTemplateId : undefined,
+        excelEnabled,
+        excelAssessmentIds: excelEnabled ? excelAssessmentIds : [],
       });
     } else {
       await createCandidate({
@@ -116,6 +156,10 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
         secondaryAreas,
         roleApplied: finalRole || 'General Applicant',
         gender,
+        typingEnabled,
+        typingTemplateId: typingEnabled ? typingTemplateId : undefined,
+        excelEnabled,
+        excelAssessmentIds: excelEnabled ? excelAssessmentIds : [],
       });
     }
 
@@ -326,6 +370,97 @@ export const CandidateModal: React.FC<Props> = ({ isOpen, onClose, candidateToEd
                 <Venus className="w-4 h-4 text-purple-600 shrink-0" />
                 <span>{t.recruiter.createCandidateModal.genderFemale}</span>
               </button>
+            </div>
+          </div>
+
+          {/* Practical Assessment Modalities: Typing & Excel Toggles */}
+          <div className="pt-2 border-t border-slate-200 space-y-3">
+            {/* Typing Test Toggle */}
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Keyboard className="w-4 h-4 text-[#2368f5]" />
+                  <span>{t.recruiter.createCandidateModal.enableTypingLabel}</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={typingEnabled}
+                  onChange={e => setTypingEnabled(e.target.checked)}
+                  className="w-4 h-4 text-[#2368f5] rounded-md border-slate-300 focus:ring-[#2368f5] cursor-pointer"
+                />
+              </label>
+
+              {typingEnabled && (
+                <div className="pt-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    {t.recruiter.createCandidateModal.selectTypingTemplate}
+                  </label>
+                  <CustomSelect
+                    value={typingTemplateId}
+                    onChange={val => setTypingTemplateId(val)}
+                    className="w-full"
+                    options={typingTemplates.map(tmp => ({
+                      value: tmp.id,
+                      label: `${tmp.title} (${tmp.language.toUpperCase()})`,
+                    }))}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Excel Practical Tasks Toggle */}
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  <span>{t.recruiter.createCandidateModal.enableExcelLabel}</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={excelEnabled}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setExcelEnabled(checked);
+                    if (checked && excelAssessmentIds.length === 0 && excelAssessments.length > 0) {
+                      setExcelAssessmentIds([excelAssessments[0].id]);
+                    }
+                  }}
+                  className="w-4 h-4 text-emerald-600 rounded-md border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                />
+              </label>
+
+              {excelEnabled && (
+                <div className="pt-1 space-y-1.5">
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    {t.recruiter.createCandidateModal.selectExcelTasks}
+                  </label>
+                  <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1">
+                    {excelAssessments.map(task => {
+                      const isTaskChecked = excelAssessmentIds.includes(task.id);
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={() => {
+                            setExcelAssessmentIds(prev =>
+                              prev.includes(task.id)
+                                ? prev.filter(id => id !== task.id)
+                                : [...prev, task.id]
+                            );
+                          }}
+                          className={`p-2 rounded-xl border flex items-center justify-between cursor-pointer text-xs transition-colors ${
+                            isTaskChecked
+                              ? 'bg-emerald-50/70 border-emerald-500 text-emerald-950 font-semibold'
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          <span className="truncate">{task.title}</span>
+                          {isTaskChecked && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-1.5" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

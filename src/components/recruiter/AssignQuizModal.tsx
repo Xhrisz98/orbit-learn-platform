@@ -22,6 +22,8 @@ import {
   Layers,
   PlusCircle,
   Trash2,
+  Keyboard,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
@@ -47,7 +49,22 @@ export const AssignQuizModal: React.FC<Props> = ({
   defaultCandidateId,
   defaultQuizId,
 }) => {
-  const { candidates, quizzes, assignCustomSuite, t, language } = useApp();
+  const {
+    candidates,
+    quizzes,
+    assignCustomSuite,
+    typingTemplates,
+    assignTypingTest,
+    excelAssessments,
+    assignExcelAssessment,
+    t,
+    language,
+  } = useApp();
+
+  // Assessment Modality: Quiz Bank, Typing Test, or Practical Excel
+  const [modality, setModality] = useState<'quiz' | 'typing' | 'excel'>('quiz');
+  const [selectedTypingId, setSelectedTypingId] = useState<string>('');
+  const [selectedExcelId, setSelectedExcelId] = useState<string>('');
 
   // Top Demand Filters
   const [filterArea, setFilterArea] = useState<string>('');
@@ -174,9 +191,17 @@ export const AssignQuizModal: React.FC<Props> = ({
         setActiveBankIndex(0);
       }
 
+      setModality('quiz');
+      if (typingTemplates.length > 0) {
+        setSelectedTypingId(typingTemplates[0].id);
+      }
+      if (excelAssessments.length > 0) {
+        setSelectedExcelId(excelAssessments[0].id);
+      }
+
       setAssignedSuccess(false);
     }
-  }, [isOpen, defaultCandidateId, defaultQuizId, candidates, quizzes]);
+  }, [isOpen, defaultCandidateId, defaultQuizId, candidates, quizzes, typingTemplates, excelAssessments]);
 
   // Handle branch cascading change in Step 2
   const handleBranchChange = (branch: string) => {
@@ -366,12 +391,60 @@ export const AssignQuizModal: React.FC<Props> = ({
   // Preview quiz currently in the Step 2 dropdown
   const previewDropdownQuiz = branchQuizzes.find(q => q.id === selectedQuizId);
 
+  // Helper for typing and excel preview
+  const selectedTypingTemplate = typingTemplates.find(t => t.id === selectedTypingId) || typingTemplates[0];
+  const selectedExcelAssessment = excelAssessments.find(a => a.id === selectedExcelId) || excelAssessments[0];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedCandidateIds.length === 0) {
       alert(t.recruiter.assignModal.noCandidatesSelected);
       return;
     }
+
+    if (modality === 'typing') {
+      if (!selectedTypingId) {
+        alert(language === 'es' ? 'Selecciona una plantilla de mecanografía.' : 'Please select a typing template.');
+        return;
+      }
+      setIsSubmitting(true);
+      try {
+        await assignTypingTest(selectedCandidateIds, selectedTypingId);
+        setAssignedSuccess(true);
+        setTimeout(() => {
+          setAssignedSuccess(false);
+          setIsSubmitting(false);
+          onClose();
+        }, 1600);
+      } catch (err) {
+        console.error('Error assigning typing test:', err);
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    if (modality === 'excel') {
+      if (!selectedExcelId) {
+        alert(language === 'es' ? 'Selecciona una evaluación de Excel.' : 'Please select an Excel assessment.');
+        return;
+      }
+      setIsSubmitting(true);
+      try {
+        await assignExcelAssessment(selectedCandidateIds, selectedExcelId);
+        setAssignedSuccess(true);
+        setTimeout(() => {
+          setAssignedSuccess(false);
+          setIsSubmitting(false);
+          onClose();
+        }, 1600);
+      } catch (err) {
+        console.error('Error assigning excel task:', err);
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Default 'quiz' modality
     if (configuredBanks.length === 0) {
       alert(t.recruiter.assignModal.atLeastOneBankNeeded);
       return;
@@ -415,10 +488,20 @@ export const AssignQuizModal: React.FC<Props> = ({
               {t.recruiter.assignModal.successTitle}
             </h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-              {t.recruiter.assignModal.successMultiDesc
-                .replace('{banks}', String(configuredBanks.length))
-                .replace('{questions}', String(totalQuestions))
-                .replace('{candidates}', String(selectedCandidateIds.length))}
+              {modality === 'typing'
+                ? t.recruiter.assignModal.typingSuccessDesc.replace(
+                    '{count}',
+                    String(selectedCandidateIds.length)
+                  )
+                : modality === 'excel'
+                ? t.recruiter.assignModal.excelSuccessDesc.replace(
+                    '{count}',
+                    String(selectedCandidateIds.length)
+                  )
+                : t.recruiter.assignModal.successMultiDesc
+                    .replace('{banks}', String(configuredBanks.length))
+                    .replace('{questions}', String(totalQuestions))
+                    .replace('{candidates}', String(selectedCandidateIds.length))}
             </p>
           </div>
         ) : (
@@ -591,8 +674,196 @@ export const AssignQuizModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Step 2: Multi-Bank Assessment Suite Builder */}
-              <div className="space-y-3 pt-2 border-t border-slate-200">
+              {/* Assessment Modality Selector */}
+              <div className="space-y-2 pt-2 border-t border-slate-200">
+                <label className="text-xs font-bold text-slate-900 block">
+                  {t.recruiter.assignModal.modalityTitle}
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setModality('quiz')}
+                    className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
+                      modality === 'quiz'
+                        ? 'bg-blue-50/80 border-[#2368f5] text-[#10243e] font-bold shadow-xs'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        modality === 'quiz' ? 'bg-[#2368f5] text-white' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <div className="truncate">
+                      <p className="text-xs font-bold truncate">{t.recruiter.assignModal.modalityQuiz}</p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {quizzes.length} {language === 'es' ? 'bancos' : 'banks'}
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setModality('typing')}
+                    className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
+                      modality === 'typing'
+                        ? 'bg-blue-50/80 border-[#2368f5] text-[#10243e] font-bold shadow-xs'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        modality === 'typing' ? 'bg-[#2368f5] text-white' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      <Keyboard className="w-4 h-4" />
+                    </div>
+                    <div className="truncate">
+                      <p className="text-xs font-bold truncate">{t.recruiter.assignModal.modalityTyping}</p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {typingTemplates.length} {language === 'es' ? 'plantillas' : 'templates'}
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setModality('excel')}
+                    className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
+                      modality === 'excel'
+                        ? 'bg-emerald-50/80 border-emerald-600 text-emerald-950 font-bold shadow-xs'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        modality === 'excel' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </div>
+                    <div className="truncate">
+                      <p className="text-xs font-bold truncate">{t.recruiter.assignModal.modalityExcel}</p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {excelAssessments.length} {language === 'es' ? 'tareas' : 'tasks'}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Typing Configuration Panel */}
+              {modality === 'typing' && (
+                <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <Keyboard className="w-4 h-4 text-[#2368f5]" />
+                      <span>{t.recruiter.assignModal.typingTemplateLabel}</span>
+                    </label>
+                    <CustomSelect
+                      value={selectedTypingId}
+                      onChange={val => setSelectedTypingId(val)}
+                      className="w-full"
+                      options={typingTemplates.map(tmp => ({
+                        value: tmp.id,
+                        label: `${tmp.title} (${tmp.language.toUpperCase()} • ${tmp.difficulty})`,
+                      }))}
+                    />
+                  </div>
+
+                  {selectedTypingTemplate && (
+                    <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800">
+                          {t.recruiter.assignModal.typingPreviewLabel}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#2368f5] border border-blue-200">
+                          1 {language === 'es' ? 'Minuto Estándar' : 'Minute Benchmark'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed font-mono">
+                        "{selectedTypingTemplate.text}"
+                      </p>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                        <span>
+                          {selectedTypingTemplate.text.split(/\s+/).length}{' '}
+                          {language === 'es' ? 'palabras' : 'words'}
+                        </span>
+                        <span>•</span>
+                        <span>
+                          {selectedTypingTemplate.text.length}{' '}
+                          {language === 'es' ? 'caracteres' : 'chars'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Excel Practical Configuration Panel */}
+              {modality === 'excel' && (
+                <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                      <span>{t.recruiter.assignModal.excelTaskLabel}</span>
+                    </label>
+                    <CustomSelect
+                      value={selectedExcelId}
+                      onChange={val => setSelectedExcelId(val)}
+                      className="w-full"
+                      options={excelAssessments.map(a => ({
+                        value: a.id,
+                        label: `${a.title} (${getLocalizedArea(a.departmentArea, language)} • ${a.timeLimitMinutes} min)`,
+                      }))}
+                    />
+                  </div>
+
+                  {selectedExcelAssessment && (
+                    <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800">
+                          {t.recruiter.assignModal.excelInstructionsPreview}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {selectedExcelAssessment.timeLimitMinutes} min
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600">{selectedExcelAssessment.description}</p>
+                      <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-1">
+                        {(typeof selectedExcelAssessment.instructions === 'string'
+                          ? selectedExcelAssessment.instructions.split('\n')
+                          : Array.isArray(selectedExcelAssessment.instructions)
+                          ? (selectedExcelAssessment.instructions as string[])
+                          : []
+                        )
+                          .map(i => i.trim())
+                          .filter(Boolean)
+                          .map((inst, idx) => (
+                            <p key={idx} className="flex items-start gap-1.5">
+                              <span className="font-bold shrink-0">{idx + 1}.</span>
+                              <span className="leading-relaxed">{inst}</span>
+                            </p>
+                          ))}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                        <FileSpreadsheet className="w-4 h-4 shrink-0 text-emerald-600" />
+                        <span className="text-slate-500 font-normal">
+                          {t.recruiter.assignModal.excelTemplateFile}:
+                        </span>
+                        <span className="font-mono truncate">{selectedExcelAssessment.templateFileName}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 2: Multi-Bank Assessment Suite Builder (Quiz Modality only) */}
+              {modality === 'quiz' && (
+                <>
+                  <div className="space-y-3 pt-2 border-t border-slate-200">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-[#2368f5]" />
@@ -1060,6 +1331,8 @@ export const AssignQuizModal: React.FC<Props> = ({
                   </div>
                 </div>
               )}
+            </>
+          )}
 
               {/* Bottom Actions */}
               <div className="flex flex-col-reverse sm:flex-row gap-2 pt-3 border-t border-slate-200">
@@ -1074,10 +1347,11 @@ export const AssignQuizModal: React.FC<Props> = ({
                   type="submit"
                   disabled={
                     selectedCandidateIds.length === 0 ||
-                    configuredBanks.length === 0 ||
-                    hasEmptyBank ||
-                    totalQuestions === 0 ||
-                    isSubmitting
+                    isSubmitting ||
+                    (modality === 'quiz' &&
+                      (configuredBanks.length === 0 || hasEmptyBank || totalQuestions === 0)) ||
+                    (modality === 'typing' && !selectedTypingId) ||
+                    (modality === 'excel' && !selectedExcelId)
                   }
                   className="w-full sm:flex-2 py-3 sm:py-2.5 px-4 text-xs font-bold bg-[#2368f5] text-white rounded-xl hover:bg-[#144cc0] disabled:opacity-40 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
                 >
@@ -1085,6 +1359,10 @@ export const AssignQuizModal: React.FC<Props> = ({
                   <span className="truncate">
                     {isSubmitting
                       ? t.common.loading
+                      : modality === 'typing'
+                      ? t.recruiter.assignModal.typingAssignBtn
+                      : modality === 'excel'
+                      ? t.recruiter.assignModal.excelAssignBtn
                       : t.recruiter.assignModal.confirmMultiBtn
                           .replace('{banks}', String(configuredBanks.length))
                           .replace('{questions}', String(totalQuestions))}

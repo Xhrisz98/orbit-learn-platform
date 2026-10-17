@@ -199,7 +199,9 @@ export const ModernDateRangePicker: React.FC<Props> = ({
       onChange(dateStr, '');
     } else if (startDate && !endDate) {
       // Finishing selection
-      if (dateStr < startDate) {
+      if (dateStr === startDate) {
+        onChange(startDate, startDate);
+      } else if (dateStr < startDate) {
         onChange(dateStr, startDate);
       } else {
         onChange(startDate, dateStr);
@@ -271,9 +273,9 @@ export const ModernDateRangePicker: React.FC<Props> = ({
       {/* Floating Modern Calendar Popover */}
       {isOpen && (
         <div
-          className={`absolute z-50 w-72 sm:w-80 bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 overflow-hidden ${
+          className={`absolute z-[100] w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 overflow-hidden ${
             direction === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'
-          } ${align === 'right' ? 'right-0' : 'left-0'}`}
+          } ${align === 'right' ? 'right-0' : 'left-0 sm:left-auto'}`}
           style={{
             animation: 'fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
@@ -410,8 +412,13 @@ export const ModernDateRangePicker: React.FC<Props> = ({
             {hasSelection && (
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
-                className="font-bold text-[#2368f5] hover:underline"
+                onClick={() => {
+                  if (startDate && !endDate) {
+                    onChange(startDate, startDate);
+                  }
+                  setIsOpen(false);
+                }}
+                className="font-bold text-[#2368f5] hover:underline cursor-pointer"
               >
                 {language === 'es' ? 'Listo' : 'Done'}
               </button>
