@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+declare const process: any;
 
 interface SendEmailPayload {
   candidateName: string;
@@ -14,18 +13,8 @@ interface SendEmailPayload {
 }
 
 function getEnvVar(key: string): string {
-  if (process.env[key]) {
-    return process.env[key]!.trim();
-  }
-  try {
-    const envPath = path.resolve(process.cwd(), '.env.local');
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, 'utf8');
-      const match = content.match(new RegExp(`^${key}=(.*)$`, 'm'));
-      if (match) return match[1].trim();
-    }
-  } catch {
-    // ignore
+  if (typeof process !== 'undefined' && process?.env && process.env[key]) {
+    return String(process.env[key]).trim();
   }
   return '';
 }
