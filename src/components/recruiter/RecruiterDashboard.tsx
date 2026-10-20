@@ -152,8 +152,9 @@ export const RecruiterDashboard: React.FC = () => {
           t.recruiter.pipeline.emailSentSuccess.replace('{email}', params.candidateEmail)
         );
       } else {
+        const detailMsg = res.details ? ` - ${res.details}` : '';
         alert(
-          t.recruiter.pipeline.emailSentError.replace('{error}', res.error || 'Unknown error')
+          t.recruiter.pipeline.emailSentError.replace('{error}', (res.error || 'Unknown error') + detailMsg)
         );
       }
     } catch (err: any) {
