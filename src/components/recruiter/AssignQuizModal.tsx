@@ -29,6 +29,7 @@ import {
 import { getLocalizedArea } from '../../utils/areaLocalization';
 import { resolveCandidateGender, getCandidateInitials } from '../../utils/genderHelper';
 import { CustomSelect } from '../common/CustomSelect';
+import { sendAssessmentInviteEmail } from '../../services/emailService';
 
 interface ConfiguredBank {
   quizId: string;
@@ -441,6 +442,23 @@ export const AssignQuizModal: React.FC<Props> = ({
       setIsSubmitting(true);
       try {
         await assignTypingTest(selectedCandidateIds, selectedTypingId);
+
+        // Send automated invitation email via Microsoft 365 (web@seu-usa.com)
+        const targetCandidates = candidates.filter(c => selectedCandidateIds.includes(c.id));
+        const typingTpl = typingTemplates.find(t => t.id === selectedTypingId);
+        targetCandidates.forEach(cand => {
+          const directLink = `${window.location.origin}?code=${encodeURIComponent(cand.email)}`;
+          sendAssessmentInviteEmail({
+            candidateName: cand.name,
+            candidateEmail: cand.email,
+            assessmentTitle: typingTpl?.title || '1-Minute Typing Speed Test',
+            roleApplied: cand.roleApplied,
+            accessLink: directLink,
+            timeLimit: 1,
+            type: 'typing',
+            language,
+          }).catch(() => {});
+        });
         setAssignedSuccess(true);
         setTimeout(() => {
           setAssignedSuccess(false);
@@ -462,6 +480,23 @@ export const AssignQuizModal: React.FC<Props> = ({
       setIsSubmitting(true);
       try {
         await assignExcelAssessment(selectedCandidateIds, selectedExcelId);
+
+        // Send automated invitation email via Microsoft 365 (web@seu-usa.com)
+        const targetCandidates = candidates.filter(c => selectedCandidateIds.includes(c.id));
+        const excelObj = excelAssessments.find(a => a.id === selectedExcelId);
+        targetCandidates.forEach(cand => {
+          const directLink = `${window.location.origin}?code=${encodeURIComponent(cand.email)}`;
+          sendAssessmentInviteEmail({
+            candidateName: cand.name,
+            candidateEmail: cand.email,
+            assessmentTitle: excelObj?.title || 'Practical Excel Assessment',
+            roleApplied: cand.roleApplied,
+            accessLink: directLink,
+            timeLimit: excelObj?.timeLimitMinutes || 30,
+            type: 'excel',
+            language,
+          }).catch(() => {});
+        });
         setAssignedSuccess(true);
         setTimeout(() => {
           setAssignedSuccess(false);
@@ -495,6 +530,24 @@ export const AssignQuizModal: React.FC<Props> = ({
           durationMinutes: b.durationPreset,
         }))
       );
+
+      // Send automated invitation email via Microsoft 365 (web@seu-usa.com)
+      const targetCandidates = candidates.filter(c => selectedCandidateIds.includes(c.id));
+      const firstQuiz = quizzes.find(q => q.id === configuredBanks[0]?.quizId);
+      targetCandidates.forEach(cand => {
+        const directLink = `${window.location.origin}?code=${encodeURIComponent(cand.email)}`;
+        sendAssessmentInviteEmail({
+          candidateName: cand.name,
+          candidateEmail: cand.email,
+          assessmentTitle: firstQuiz?.title || 'Technical Assessment Suite',
+          roleApplied: cand.roleApplied,
+          accessLink: directLink,
+          timeLimit: configuredBanks[0]?.durationPreset || 20,
+          questionsCount: totalQuestions,
+          type: 'quiz',
+          language,
+        }).catch(() => {});
+      });
       setAssignedSuccess(true);
       setTimeout(() => {
         setAssignedSuccess(false);

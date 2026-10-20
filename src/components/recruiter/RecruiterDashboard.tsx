@@ -39,7 +39,11 @@ import {
   FileSpreadsheet,
   Check,
   X,
+  Mail,
+  Loader2,
 } from 'lucide-react';
+
+import { sendAssessmentInviteEmail } from '../../services/emailService';
 
 import { getLocalizedArea } from '../../utils/areaLocalization';
 import { resolveCandidateGender, getCandidateInitials } from '../../utils/genderHelper';
@@ -115,6 +119,50 @@ export const RecruiterDashboard: React.FC = () => {
   const toggleQuizExpanded = (quizId: string) => {
     setExpandedQuizIds(prev => ({ ...prev, [quizId]: !prev[quizId] }));
   };
+
+  const [sendingEmailKey, setSendingEmailKey] = useState<string | null>(null);
+
+  const handleSendInviteEmail = async (params: {
+    candidateName: string;
+    candidateEmail: string;
+    assessmentTitle: string;
+    roleApplied?: string;
+    link: string;
+    timeLimit?: number;
+    questionsCount?: number;
+    type?: 'quiz' | 'typing' | 'excel';
+    uniqueKey: string;
+  }) => {
+    setSendingEmailKey(params.uniqueKey);
+    try {
+      const res = await sendAssessmentInviteEmail({
+        candidateName: params.candidateName,
+        candidateEmail: params.candidateEmail,
+        assessmentTitle: params.assessmentTitle,
+        roleApplied: params.roleApplied,
+        accessLink: params.link,
+        timeLimit: params.timeLimit,
+        questionsCount: params.questionsCount,
+        type: params.type || 'quiz',
+        language,
+      });
+
+      if (res.success) {
+        alert(
+          t.recruiter.pipeline.emailSentSuccess.replace('{email}', params.candidateEmail)
+        );
+      } else {
+        alert(
+          t.recruiter.pipeline.emailSentError.replace('{error}', res.error || 'Unknown error')
+        );
+      }
+    } catch (err: any) {
+      alert(t.recruiter.pipeline.emailSentError.replace('{error}', err?.message || 'Network error'));
+    } finally {
+      setSendingEmailKey(null);
+    }
+  };
+
 
   // Metrics calculation
   const totalCandidatesCount = candidates.length;
@@ -801,11 +849,33 @@ export const RecruiterDashboard: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => {
-                                  alert(t.recruiter.pipeline.reminderSentAlert.replace('{email}', item.candidateEmail));
+                                  const link = `${window.location.origin}?code=${item.id}`;
+                                  handleSendInviteEmail({
+                                    candidateName: item.candidateName,
+                                    candidateEmail: item.candidateEmail,
+                                    assessmentTitle: item.quizTitle,
+                                    roleApplied: item.roleApplied,
+                                    link,
+                                    timeLimit: item.durationMinutes || 20,
+                                    questionsCount: item.totalQuestions,
+                                    type: 'quiz',
+                                    uniqueKey: `quiz-${item.id}`,
+                                  });
                                 }}
-                                className="text-slate-400 hover:text-slate-700 text-[11px] font-semibold cursor-pointer"
+                                disabled={sendingEmailKey === `quiz-${item.id}`}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 text-[#2368f5] font-bold hover:bg-blue-100 transition-colors cursor-pointer text-xs border border-blue-200 disabled:opacity-50"
+                                title={t.recruiter.pipeline.sendEmailBtn}
                               >
-                                {t.recruiter.pipeline.remindBtn}
+                                {sendingEmailKey === `quiz-${item.id}` ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Mail className="w-3 h-3" />
+                                )}
+                                <span>
+                                  {sendingEmailKey === `quiz-${item.id}`
+                                    ? t.recruiter.pipeline.emailSending
+                                    : t.recruiter.pipeline.sendEmailBtn}
+                                </span>
                               </button>
                             </div>
                           )}
@@ -1746,6 +1816,34 @@ export const RecruiterDashboard: React.FC = () => {
                               >
                                 <Copy className="w-3 h-3" />
                                 <span>{t.recruiter.pipeline.copyLinkBtn}</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const link = `${window.location.origin}?code=${test.id}`;
+                                  handleSendInviteEmail({
+                                    candidateName: test.candidateName,
+                                    candidateEmail: test.candidateEmail,
+                                    assessmentTitle: test.templateTitle,
+                                    link,
+                                    timeLimit: 1,
+                                    type: 'typing',
+                                    uniqueKey: `typing-${test.id}`,
+                                  });
+                                }}
+                                disabled={sendingEmailKey === `typing-${test.id}`}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 text-[#2368f5] font-bold hover:bg-blue-100 transition-colors cursor-pointer text-xs border border-blue-200 disabled:opacity-50"
+                                title={t.recruiter.pipeline.sendEmailBtn}
+                              >
+                                {sendingEmailKey === `typing-${test.id}` ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Mail className="w-3 h-3" />
+                                )}
+                                <span>
+                                  {sendingEmailKey === `typing-${test.id}`
+                                    ? t.recruiter.pipeline.emailSending
+                                    : t.recruiter.pipeline.sendEmailBtn}
+                                </span>
                               </button>
                             </div>
                           )}

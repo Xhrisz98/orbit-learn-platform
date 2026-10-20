@@ -187,6 +187,10 @@ export const translations = {
         linkCopiedAlert: 'Link copied to clipboard!\n\nSend this to {name} ({email}) to take their assessment.',
         remindBtn: 'Remind',
         reminderSentAlert: 'Reminder sent to {email}',
+        sendEmailBtn: 'Send Email',
+        emailSending: 'Sending...',
+        emailSentSuccess: 'Invitation email successfully sent to {email} from web@seu-usa.com',
+        emailSentError: 'Failed to send email: {error}',
       },
       quizzes: {
         title: 'Industry Question Banks',
@@ -683,6 +687,10 @@ export const translations = {
         linkCopiedAlert: '¡Enlace copiado al portapapeles!\n\nEnvíalo a {name} ({email}) para que rinda su evaluación.',
         remindBtn: 'Recordar',
         reminderSentAlert: 'Recordatorio enviado a {email}',
+        sendEmailBtn: 'Enviar Correo',
+        emailSending: 'Enviando...',
+        emailSentSuccess: 'Correo de invitación enviado con éxito a {email} desde web@seu-usa.com',
+        emailSentError: 'Error al enviar el correo: {error}',
       },
       quizzes: {
         title: 'Bancos de Preguntas por Industria',
